@@ -1,0 +1,35 @@
+<!-- 内容生成页 -->
+<view class="page">
+  <!-- 场景选择 -->
+  <view class="scene-tabs">
+    <view class="scene-tab {{scene === 'social' ? 'active' : ''}}" bindtap="onSceneChange" data-scene="social">📱 朋友圈推文</view>
+    <view class="scene-tab {{scene === 'ecommerce' ? 'active' : ''}}" bindtap="onSceneChange" data-scene="ecommerce">🛒 电商详情页</view>
+  </view>
+
+  <!-- 输入区 -->
+  <view class="form">
+    <view class="form-item">
+      <text class="label">金柚品名</text>
+      <input class="input" value="{{pomeloName}}" bindinput="onInput" data-field="pomeloName" placeholder="如：梅县松口沙田柚" />
+    </view>
+    <view class="form-item">
+      <text class="label">自定义要求（可选）</text>
+      <textarea class="textarea" value="{{prompt}}" bindinput="onInput" data-field="prompt" placeholder="如：突出中秋送礼、客家文化元素" maxlength="200" />
+    </view>
+    <button class="gen-btn" bindtap="onGenerate" loading="{{loading}}" disabled="{{loading}}">
+      {{loading ? 'AI 正在创作...' : '✨ 生成文案'}}
+    </button>
+  </view>
+
+  <!-- 结果展示 -->
+  <view class="result" wx:if="{{result}}">
+    <view class="result-header">
+      <text class="result-scene">{{result.scene === 'ecommerce' ? '电商文案' : '朋友圈推文'}}</text>
+      <text class="result-time">{{result.created_at}}</text>
+    </view>
+    <view class="result-content">{{result.content}}</view>
+    <view class="result-actions">
+      <button class="copy-btn" bindtap="onCopy">📋 复制文案</button>
+    </view>
+  </view>
+</view>

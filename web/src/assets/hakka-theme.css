@@ -1,0 +1,125 @@
+/* ============================================
+   "围屋红" — 小红书×客家文化风格
+   设计关键词: 种草·新中式·宣纸·印章·檐角
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=ZCOOL+XiaoWei&display=swap');
+
+:root {
+  --primary:       #d9504a;
+  --primary-light: #fbe8e6;
+  --primary-deep:  #b8323a;
+  --gold:          #c4a265;
+  --gold-light:    #faf5eb;
+  --gold-deep:     #a6844a;
+  --bg-paper:      #fefcf7;
+  --bg-card:       #ffffff;
+  --bg-warm:       #fdf8f0;
+  --text-primary:     #2c2416;
+  --text-heading:     #4a3a28;
+  --text-secondary:   #9b8b70;
+  --text-placeholder: #c4b8a2;
+  --border:         #ede4d2;
+  --border-light:   #f5efe4;
+  --font-heading:   'Noto Serif SC', 'ZCOOL XiaoWei', 'STSong', serif;
+  --font-body:      'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-display:   'ZCOOL XiaoWei', 'Noto Serif SC', serif;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px;
+  --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px;
+  --radius-sm: 8px; --radius-md: 14px; --radius-lg: 20px; --radius-xl: 28px;
+  --shadow-card:   0 2px 16px rgba(44,36,22,0.04);
+  --shadow-float:  0 8px 32px rgba(44,36,22,0.08);
+  --shadow-button: 0 2px 8px rgba(217,80,74,0.25);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);background:var(--bg-paper);color:var(--text-primary);line-height:1.75;background-image:url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E")}
+::selection{background:var(--primary-light);color:var(--primary-deep)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 28px;border:none;border-radius:26px;font-size:15px;font-weight:600;cursor:pointer;transition:all .25s cubic-bezier(.25,.8,.25,1.2);letter-spacing:.03em}
+.btn-primary{background:linear-gradient(135deg,var(--primary),#e8746e);color:#fff;box-shadow:var(--shadow-button)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(217,80,74,.35)}
+.btn-primary:active{transform:scale(.97)}
+.btn-outline{background:transparent;color:var(--primary);border:1.5px solid rgba(217,80,74,.3)}
+.btn-outline:hover{background:var(--primary-light);border-color:var(--primary)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#d4b87a);color:#fff;box-shadow:0 2px 8px rgba(196,162,101,.3)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(196,162,101,.4)}
+
+.card{background:var(--bg-card);border-radius:var(--radius-lg);padding:var(--space-lg);box-shadow:var(--shadow-card);border:1px solid var(--border-light);transition:box-shadow .3s,transform .3s}
+.card:hover{box-shadow:var(--shadow-float);transform:translateY(-3px)}
+
+.seal{display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--primary);letter-spacing:.1em;border:2px solid var(--primary);padding:2px 12px;border-radius:3px;transform:rotate(-3deg);opacity:.85}
+
+.tag{display:inline-block;padding:5px 14px;border-radius:16px;font-size:12px;letter-spacing:.02em}
+.tag-red{background:var(--primary-light);color:var(--primary)}
+.tag-gold{background:var(--gold-light);color:var(--gold-deep)}
+.tag-brown{background:var(--bg-warm);color:var(--text-heading)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dotBounce{0%,60%,100%{opacity:.3;transform:scale(.6)}30%{opacity:1;transform:scale(1)}}
+
+.anim-fade-up{animation:fadeUp .5s cubic-bezier(.25,.8,.25,1) both}
+.anim-stagger>*{animation:fadeUp .5s cubic-bezier(.25,.8,.25,1) both}
+.anim-stagger>:nth-child(1){animation-delay:0s}
+.anim-stagger>:nth-child(2){animation-delay:.1s}
+.anim-stagger>:nth-child(3){animation-delay:.2s}
+.anim-stagger>:nth-child(4){animation-delay:.3s}
+.anim-stagger>:nth-child(5){animation-delay:.4s}
+.anim-stagger>:nth-child(6){animation-delay:.5s}
+
+.skeleton{background:linear-gradient(90deg,var(--bg-warm) 25%,#f0ebe0 50%,var(--bg-warm) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.ink-stroke{position:absolute;pointer-events:none;opacity:.04;width:160px;height:4px;background:var(--text-primary);border-radius:50%;filter:blur(3px)}
+
+/* ============================================
+   Motion Recipes (from frontend-dev skill)
+   Adapted for CSS-only / Vue
+   ============================================ */
+
+/* -- Scroll Reveal (CSS only, modern browsers) -- */
+@keyframes reveal{from{opacity:0;transform:translateY(32px);filter:blur(4px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+.scroll-reveal{animation:reveal .7s cubic-bezier(.25,.8,.25,1) both;animation-timeline:view();animation-range:entry 0% entry 100%}
+@supports not (animation-timeline:view()){.scroll-reveal{animation:none;opacity:1;transform:none;filter:none}}
+
+/* -- Staggered Blur-in Grid (Vue-compatible) -- */
+.blur-stagger>*{animation:reveal .6s cubic-bezier(.25,.8,.25,1) both}
+.blur-stagger>:nth-child(1){animation-delay:0s}
+.blur-stagger>:nth-child(2){animation-delay:.08s}
+.blur-stagger>:nth-child(3){animation-delay:.16s}
+.blur-stagger>:nth-child(4){animation-delay:.24s}
+.blur-stagger>:nth-child(5){animation-delay:.32s}
+.blur-stagger>:nth-child(6){animation-delay:.40s}
+
+/* -- Hero Parallax Depth -- */
+.hero-parallax{perspective:1px;perspective-origin:center top;overflow-x:hidden}
+.hero-parallax-layer{transform:translateZ(0)}
+.hero-parallax-layer-back{transform:translateZ(-.5px) scale(1.5)}
+
+/* -- Float-on-hover Micro-interaction -- */
+.hover-float{transition:transform .35s cubic-bezier(.25,.8,.25,1.2),box-shadow .35s ease}
+.hover-float:hover{transform:translateY(-4px);box-shadow:var(--shadow-float)}
+
+/* -- Pulse Attention (for CTAs) -- */
+@keyframes pulseAttention{0%,100%{box-shadow:0 0 0 0 rgba(217,80,74,.4)}50%{box-shadow:0 0 0 12px rgba(217,80,74,0)}}
+.pulse-cta{animation:pulseAttention 2.5s infinite}
+
+/* -- Smooth Page Scroll -- */
+html{scroll-behavior:smooth}
+
+/* ============================================
+   Mascot Character: "柚仔" (Pomelo-chan)
+   ============================================ */
+.mascot{display:inline-flex;align-items:center;justify-content:center;position:relative}
+.mascot-body{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e8b84a,#d4952a);position:relative;box-shadow:0 4px 12px rgba(196,162,101,.3)}
+.mascot-body::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:14px;height:8px;background:#788c5d;border-radius:4px 4px 0 0}
+.mascot-body::after{content:'';position:absolute;top:14px;left:14px;width:6px;height:6px;background:rgba(255,255,255,.6);border-radius:50%;box-shadow:14px 0 0 rgba(255,255,255,.6)}
+.mascot-shadow{position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:36px;height:8px;background:rgba(44,36,22,.1);border-radius:50%}
+.mascot:hover .mascot-body{animation:mascotBounce .5s cubic-bezier(.25,.8,.25,1.2)}
+@keyframes mascotBounce{0%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}50%{transform:translateY(0)}70%{transform:translateY(-4px)}}
+
+/* ============================================
+   Divider: 檐角波浪线 (Eave Wave)
+   ============================================ */
+.divider-wave{height:24px;background:repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 2px,transparent 2px,transparent 12px);opacity:.15;margin:var(--space-xl) 0}

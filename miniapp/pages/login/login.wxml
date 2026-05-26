@@ -1,0 +1,15 @@
+<view class="page">
+  <view class="hero">
+    <image class="logo" src="/images/logo.png" mode="aspectFit" />
+    <text class="title">客家金柚AI智荐</text>
+    <text class="desc">登录后可享受个性化推荐与更多功能</text>
+  </view>
+
+  <button class="login-btn" bindtap="onWxLogin" loading="{{loading}}" disabled="{{loading}}">
+    🟢 微信一键登录
+  </button>
+
+  <view class="skip" bindtap="onSkip">
+    <text>暂不登录，先看看 →</text>
+  </view>
+</view>

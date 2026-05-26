@@ -1,0 +1,79 @@
+<view class="page">
+  <block wx:if="{{entity}}">
+    <!-- 头图 -->
+    <image class="hero-img" src="{{entity.imageUrl || '/images/default_pomelo.png'}}" mode="aspectFill" />
+
+    <view class="info-card">
+      <text class="name">{{entity.pomeloName}}</text>
+
+      <view class="meta">
+        <view class="meta-item"><text class="meta-label">产地</text><text class="meta-val">{{entity.origin || '-'}}</text></view>
+        <view class="meta-item"><text class="meta-label">品类</text><text class="meta-val">{{entity.category || '-'}}</text></view>
+        <view class="meta-item"><text class="meta-label">规格</text><text class="meta-val">{{entity.specification || '-'}}</text></view>
+        <view class="meta-item"><text class="meta-label">价格</text><text class="meta-val price">{{entity.priceRange || '-'}}</text></view>
+        <view class="meta-item"><text class="meta-label">重量</text><text class="meta-val">{{entity.weightRange || '-'}}</text></view>
+        <view class="meta-item"><text class="meta-label">季节</text><text class="meta-val">{{entity.seasonInfo || '-'}}</text></view>
+      </view>
+    </view>
+
+    <!-- 标签 -->
+    <view class="tags" wx:if="{{entity.tags}}">
+      <text class="tag" wx:for="{{entity.tags.split(',')}}" wx:key="index">{{item.trim()}}</text>
+    </view>
+
+    <!-- 详情描述 -->
+    <view class="section" wx:if="{{entity.tasteDescription}}">
+      <text class="section-title">口感风味</text>
+      <text class="section-text">{{entity.tasteDescription}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.cultivationProcess}}">
+      <text class="section-title">种植工艺</text>
+      <text class="section-text">{{entity.cultivationProcess}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.hakkaCultureRelation}}">
+      <text class="section-title">🏮 客家文化</text>
+      <text class="section-text">{{entity.hakkaCultureRelation}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.ediblePairing}}">
+      <text class="section-title">食用搭配</text>
+      <text class="section-text">{{entity.ediblePairing}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.identificationTips}}">
+      <text class="section-title">辨别挑选</text>
+      <text class="section-text">{{entity.identificationTips}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.preservationMethod}}">
+      <text class="section-title">保鲜储藏</text>
+      <text class="section-text">{{entity.preservationMethod}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.nutritionalValue}}">
+      <text class="section-title">营养价值</text>
+      <text class="section-text">{{entity.nutritionalValue}}</text>
+    </view>
+
+    <!-- 评分 -->
+    <view class="section" wx:if="{{entity.scoreRequirementMatch}}">
+      <text class="section-title">基础评分</text>
+      <view class="scores">
+        <text>需求匹配：{{entity.scoreRequirementMatch}} / 10</text>
+        <text>场景适配：{{entity.scoreSceneFit}} / 10</text>
+        <text>客家特色：{{entity.scoreHakkaFeature}} / 10</text>
+      </view>
+    </view>
+  </block>
+
+  <view wx:else class="empty">
+    <text wx:if="{{!loading}}">暂无数据</text>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar" wx:if="{{entity}}">
+    <button class="btn-ask" bindtap="onAskAbout">向AI了解更多</button>
+  </view>
+</view>

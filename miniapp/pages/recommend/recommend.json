@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "AI金柚智荐",
+  "navigationBarBackgroundColor": "#d4a843",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "pomelo-card": "/components/pomelo-card/pomelo-card"
+  }
+}

@@ -1,0 +1,147 @@
+/* 金柚卡片组件样式 */
+.pomelo-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin: 12rpx 0;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 头部：左图右文 */
+.card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.card-image {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 12rpx;
+  background: #f5f5f5;
+  flex-shrink: 0;
+}
+
+.card-title-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  overflow: hidden;
+}
+
+.card-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-origin {
+  font-size: 24rpx;
+  color: #888;
+}
+
+.card-price {
+  font-size: 26rpx;
+  color: #e8684a;
+  font-weight: 500;
+}
+
+/* 评分 */
+.card-scores {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.score-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.score-stars {
+  display: flex;
+  gap: 4rpx;
+}
+
+.star {
+  font-size: 28rpx;
+  color: #ddd;
+}
+
+.star.active {
+  color: #ffa940;
+}
+
+.score-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #e8684a;
+  margin-left: auto;
+}
+
+/* 标签 */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-top: 14rpx;
+}
+
+.tag {
+  font-size: 22rpx;
+  color: #b8860b;
+  background: #fef7e0;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+/* 推荐理由 */
+.card-reason {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10rpx;
+  margin-top: 16rpx;
+  padding: 16rpx;
+  background: #faf8f0;
+  border-radius: 10rpx;
+  border-left: 4rpx solid #d4a843;
+}
+
+.reason-icon {
+  font-size: 26rpx;
+  flex-shrink: 0;
+  margin-top: 2rpx;
+}
+
+.reason-text {
+  font-size: 26rpx;
+  color: #5a4636;
+  line-height: 1.6;
+}
+
+/* 底部按钮 */
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16rpx;
+}
+
+.detail-btn {
+  font-size: 26rpx;
+  color: #d4a843;
+  padding: 8rpx 20rpx;
+  border: 1rpx solid #d4a843;
+  border-radius: 30rpx;
+}

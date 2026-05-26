@@ -1,0 +1,40 @@
+<!-- 金柚卡片组件 -->
+<view class="pomelo-card" bindtap="onTapCard">
+
+  <!-- 头部：图片 + 名称 -->
+  <view class="card-header">
+    <image class="card-image" src="{{displayImage}}" mode="aspectFill" lazy-load />
+    <view class="card-title-area">
+      <text class="card-name">{{displayName}}</text>
+      <text class="card-origin">{{displayOrigin}}</text>
+      <text class="card-price" wx:if="{{displayPrice}}">{{displayPrice}}</text>
+    </view>
+  </view>
+
+  <!-- 评分区 -->
+  <view class="card-scores" wx:if="{{displayScore}}">
+    <view class="score-row">
+      <text class="score-label">综合评分</text>
+      <view class="score-stars">
+        <text wx:for="{{scoreStars}}" wx:key="index" class="star {{item === 1 ? 'active' : ''}}">{{item === 1 ? '★' : '☆'}}</text>
+      </view>
+      <text class="score-value">{{displayScore}}</text>
+    </view>
+  </view>
+
+  <!-- 标签 -->
+  <view class="card-tags" wx:if="{{displayTags.length > 0}}">
+    <text class="tag" wx:for="{{displayTags}}" wx:key="index">{{item}}</text>
+  </view>
+
+  <!-- 推荐理由 -->
+  <view class="card-reason" wx:if="{{displayReason}}">
+    <text class="reason-icon">💬</text>
+    <text class="reason-text">{{displayReason}}</text>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="card-footer" wx:if="{{showDetailBtn}}">
+    <text class="detail-btn" bindtap="onTapDetail">查看详情 →</text>
+  </view>
+</view>

@@ -1,0 +1,74 @@
+<view class="page">
+  <!-- Tab 切换 -->
+  <view class="tabs">
+    <view class="tab {{tab === 'knowledge' ? 'active' : ''}}" bindtap="switchTab" data-tab="knowledge">📚 知识库</view>
+    <view class="tab {{tab === 'prompt' ? 'active' : ''}}" bindtap="switchTab" data-tab="prompt">💬 Prompt库</view>
+  </view>
+
+  <!-- 知识库列表 -->
+  <view wx:if="{{tab === 'knowledge'}}">
+    <view class="toolbar">
+      <text class="count">共 {{knowledgeList.length}} 条</text>
+      <button class="add-btn" bindtap="onAdd" size="mini">+ 新增</button>
+    </view>
+    <view class="list">
+      <view class="list-item" wx:for="{{knowledgeList}}" wx:key="id">
+        <view class="item-info">
+          <text class="item-name">{{item.pomeloName}}</text>
+          <text class="item-sub">{{item.origin}} · {{item.category}}</text>
+        </view>
+        <view class="item-actions">
+          <text class="action-edit" bindtap="onEdit" data-index="{{index}}">编辑</text>
+          <text class="action-del" bindtap="onDelete" data-index="{{index}}" data-id="{{item.id}}">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Prompt 库列表 -->
+  <view wx:if="{{tab === 'prompt'}}">
+    <view class="toolbar">
+      <text class="count">共 {{promptList.length}} 条</text>
+      <button class="add-btn" bindtap="onAdd" size="mini">+ 新增</button>
+    </view>
+    <view class="list">
+      <view class="list-item" wx:for="{{promptList}}" wx:key="id">
+        <view class="item-info">
+          <text class="item-name">{{item.promptName}} <text class="tag-scene">{{item.sceneCategory}}</text></text>
+          <text class="item-sub">v{{item.version}} · {{item.applicableScene}}</text>
+        </view>
+        <view class="item-actions">
+          <text class="action-edit" bindtap="onEdit" data-index="{{index}}">编辑</text>
+          <text class="action-del" bindtap="onDelete" data-index="{{index}}" data-id="{{item.id}}">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑弹窗 -->
+  <view class="modal-mask" wx:if="{{editMode}}" bindtap="onCancelEdit">
+    <view class="modal" catchtap>
+      <text class="modal-title">{{isNew ? '新增' : '编辑'}}{{tab === 'knowledge' ? '知识条目' : 'Prompt模板'}}</text>
+      <form bindsubmit="onSave">
+        <block wx:if="{{tab === 'knowledge'}}">
+          <input class="form-input" name="pomeloName" placeholder="金柚品名" value="{{editItem.pomeloName}}" />
+          <input class="form-input" name="category" placeholder="品类（沙田柚/蜜柚）" value="{{editItem.category}}" />
+          <input class="form-input" name="origin" placeholder="产地" value="{{editItem.origin}}" />
+          <input class="form-input" name="specification" placeholder="规格" value="{{editItem.specification}}" />
+          <input class="form-input" name="priceRange" placeholder="价格区间" value="{{editItem.priceRange}}" />
+          <textarea class="form-textarea" name="tasteDescription" placeholder="口感描述" value="{{editItem.tasteDescription}}" />
+        </block>
+        <block wx:else>
+          <input class="form-input" name="promptName" placeholder="模板名称" value="{{editItem.promptName}}" />
+          <input class="form-input" name="sceneCategory" placeholder="场景：BUY/QA/GEN" value="{{editItem.sceneCategory}}" />
+          <textarea class="form-textarea" name="promptTemplate" placeholder="Prompt模板内容" value="{{editItem.promptTemplate}}" />
+          <textarea class="form-textarea" name="systemRoleDesc" placeholder="System角色设定" value="{{editItem.systemRoleDesc}}" />
+        </block>
+        <view class="modal-btns">
+          <button class="btn-cancel" bindtap="onCancelEdit">取消</button>
+          <button class="btn-save" form-type="submit">保存</button>
+        </view>
+      </form>
+    </view>
+  </view>
+</view>

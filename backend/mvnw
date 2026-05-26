@@ -1,0 +1,6 @@
+#!/bin/sh
+# Maven Wrapper
+BASEDIR=$(dirname "$0")
+MAVEN_PROJECTBASEDIR="$BASEDIR"
+export MAVEN_PROJECTBASEDIR
+exec java -classpath "$BASEDIR/.mvn/wrapper/maven-wrapper.jar" org.apache.maven.wrapper.MavenWrapperMain "$@"

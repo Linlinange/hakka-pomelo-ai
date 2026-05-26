@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客家金柚AI智荐系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:#f6f3ea;color:#3d3226;line-height:1.7}
+.gold{color:#d4a843}
+.hero{text-align:center;padding:80px 24px;background:linear-gradient(180deg,#faf8f0 0%,#f6f3ea 100%)}
+.hero h1{font-size:2.4rem;color:#5a4636;margin-bottom:12px}
+.hero p{color:#9b8b6f;margin-bottom:32px;font-size:1.1rem}
+.btn{display:inline-block;padding:14px 32px;border-radius:28px;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer}
+.btn-primary{background:#d4a843;color:#fff}
+.btn-outline{color:#d4a843;border:1.5px solid #d4a843;margin-left:12px}
+.container{max-width:920px;margin:0 auto;padding:40px 24px}
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px;margin:40px 0}
+.card{background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.06);text-align:center}
+.card .icon{font-size:48px;margin-bottom:12px}
+.card h3{font-size:1.1rem;margin-bottom:8px;color:#5a4636}
+.card p{font-size:.9rem;color:#9b8b6f}
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:24px 0}
+.tech-item{background:#fff;border:1px solid #ece4d0;border-radius:12px;padding:20px;text-align:center;font-size:.9rem}
+.arch{text-align:center;padding:32px;background:#fff;border-radius:16px;margin:24px 0;font-family:monospace;font-size:13px;line-height:2;white-space:pre}
+footer{text-align:center;padding:32px;color:#b0a080;font-size:.8rem;border-top:1px solid #ece4d0}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div style="font-size:72px;margin-bottom:12px">🍊</div>
+  <h1>客家金柚<span class="gold">AI</span>智荐系统</h1>
+  <p>大模型驱动 · 精准选柚 · 客家文化传承</p>
+  <a href="/chat" class="btn btn-primary">开始AI智荐 →</a>
+  <a href="/content" class="btn btn-outline">生成文案</a>
+</div>
+
+<div class="container">
+  <h2 style="text-align:center;color:#5a4636;margin-bottom:8px">核心功能</h2>
+  <div class="features">
+    <div class="card">
+      <div class="icon">🤖</div>
+      <h3>AI 智荐推荐</h3>
+      <p>大模型+规则式融合推荐排序<br>三维度评分：需求匹配·场景适配·客家特色</p>
+    </div>
+    <div class="card">
+      <div class="icon">💬</div>
+      <h3>智能问答</h3>
+      <p>金柚知识库 + DeepSeek 大模型<br>专业知识秒回，客家文化融入</p>
+    </div>
+    <div class="card">
+      <div class="icon">✍️</div>
+      <h3>文案生成</h3>
+      <p>一键生成电商详情页文案<br>朋友圈/小红书种草推文</p>
+    </div>
+  </div>
+
+  <h2 style="text-align:center;color:#5a4636;margin:40px 0 16px">系统架构</h2>
+  <div class="arch">
+  微信小程序 / Vue 3 Web (3000)
+       │  HTTP / wx.request
+       ▼
+  Spring Boot 3.2.5 (8080)  +  Redis 缓存
+       │  RestTemplate
+       ▼
+  Python Flask (5000)  →  DeepSeek API
+       │
+       ▼
+  MySQL 8.0 · 5张核心表 · 金柚知识库
+  </div>
+
+  <h2 style="text-align:center;color:#5a4636;margin:40px 0 16px">技术栈</h2>
+  <div class="tech-grid">
+    <div class="tech-item">Vue 3 + Vite<br><small>Web 前端</small></div>
+    <div class="tech-item">微信小程序<br><small>移动端</small></div>
+    <div class="tech-item">Spring Boot 3<br><small>后端服务</small></div>
+    <div class="tech-item">MyBatis-Plus<br><small>ORM</small></div>
+    <div class="tech-item">MySQL 8.0<br><small>数据库</small></div>
+    <div class="tech-item">Redis 7<br><small>缓存</small></div>
+    <div class="tech-item">Python Flask<br><small>AI 层</small></div>
+    <div class="tech-item">DeepSeek<br><small>大模型</small></div>
+  </div>
+</div>
+
+<footer>
+  梅州 · 嘉应学院 · 大学生创新训练项目 · 2026
+</footer>
+
+</body>
+</html>

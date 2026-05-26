@@ -1,0 +1,40 @@
+<view class="page">
+  <!-- 未登录 -->
+  <view wx:if="{{!isLogin}}" class="no-login">
+    <image class="avatar-placeholder" src="/images/user_avatar.png" mode="aspectFill" />
+    <text class="login-tip">登录后享受更多功能</text>
+    <button class="login-btn" bindtap="goLogin">微信一键登录</button>
+  </view>
+
+  <!-- 已登录 -->
+  <block wx:else>
+    <view class="profile-card">
+      <image class="avatar" src="{{avatarUrl || '/images/user_avatar.png'}}" mode="aspectFill" />
+      <view class="profile-info">
+        <text class="nickname">{{nickname}}</text>
+        <text class="uid">ID: {{userId}}</text>
+      </view>
+    </view>
+
+    <view class="menu-list">
+      <view class="menu-item" bindtap="goAdmin">
+        <text>⚙️ 管理后台</text>
+        <text class="arrow">→</text>
+      </view>
+    </view>
+
+    <!-- 浏览历史 -->
+    <view class="history" wx:if="{{historyList.length > 0}}">
+      <text class="history-title">近期提问</text>
+      <view class="history-item" wx:for="{{historyList}}" wx:key="id"
+            bindtap="onQuickAsk" data-text="{{item.originalInput}}">
+        <text class="history-query">{{item.originalInput}}</text>
+        <text class="history-time">{{item.createTime}}</text>
+      </view>
+    </view>
+
+    <view class="logout-btn" bindtap="onLogout">
+      <text>退出登录</text>
+    </view>
+  </block>
+</view>

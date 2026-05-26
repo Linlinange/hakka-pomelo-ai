@@ -1,0 +1,119 @@
+<!-- AI智荐对话页面 -->
+<view class="page">
+
+  <!-- 对话消息列表 -->
+  <scroll-view
+    class="chat-scroll"
+    scroll-y
+    scroll-into-view="{{scrollToId}}"
+    scroll-with-animation
+    bindscrolltolower="onScrollToLower"
+  >
+    <!-- 无消息时的欢迎页 -->
+    <view class="welcome" wx:if="{{messages.length === 0}}">
+      <image class="welcome-logo" src="/images/logo.png" mode="aspectFit" />
+      <text class="welcome-title">客家金柚AI智荐</text>
+      <text class="welcome-desc">告诉我你的需求，AI帮你精准选柚</text>
+    </view>
+
+    <!-- 消息列表 -->
+    <view class="msg-list">
+      <block wx:for="{{messages}}" wx:key="id">
+
+        <!-- === 用户消息 === -->
+        <view wx:if="{{item.role === 'user'}}" class="msg-row msg-row-user" id="msg-{{item.id}}">
+          <view class="msg-bubble msg-bubble-user">
+            <text class="msg-text">{{item.content}}</text>
+          </view>
+          <view class="msg-avatar msg-avatar-user">
+            <image src="/images/user_avatar.png" mode="aspectFill" />
+          </view>
+        </view>
+
+        <!-- === AI 文字消息 === -->
+        <view wx:elif="{{item.role === 'ai' && item.type === 'text'}}" class="msg-row msg-row-ai" id="msg-{{item.id}}">
+          <view class="msg-avatar msg-avatar-ai">
+            <image src="/images/ai_avatar.png" mode="aspectFill" />
+          </view>
+          <view class="msg-bubble msg-bubble-ai">
+            <text class="msg-text" wx:if="{{item.content}}">{{item.content}}</text>
+            <!-- 快捷提问按钮（仅首次欢迎消息显示） -->
+            <view wx:if="{{item.content.includes('我是客家金柚AI导购')}}" class="quick-asks">
+              <view class="quick-btn" bindtap="onQuickAsk" data-text="200元中秋送礼推荐什么金柚？">中秋送礼推荐</view>
+              <view class="quick-btn" bindtap="onQuickAsk" data-text="适合老人吃的金柚有哪些？">适合老人的金柚</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- === AI 推荐结果（含金柚卡片） === -->
+        <view wx:elif="{{item.role === 'ai' && item.type === 'recommend'}}" class="msg-row msg-row-ai" id="msg-{{item.id}}">
+          <view class="msg-avatar msg-avatar-ai">
+            <image src="/images/ai_avatar.png" mode="aspectFill" />
+          </view>
+          <view class="msg-bubble msg-bubble-ai msg-bubble-card">
+            <text class="msg-text msg-summary" wx:if="{{item.content}}">{{item.content}}</text>
+            <!-- 金柚卡片列表（字段名对齐 Spring Boot RecommendResponse.recommendations） -->
+            <pomelo-card
+              wx:for="{{item.recommendations}}"
+              wx:for-item="rec"
+              wx:key="id"
+              item="{{rec}}"
+              showDetailBtn="{{true}}"
+            />
+          </view>
+        </view>
+
+        <!-- === AI 加载态（打字动画） === -->
+        <view wx:elif="{{item.role === 'ai' && item.type === 'loading'}}" class="msg-row msg-row-ai" id="msg-{{item.id}}">
+          <view class="msg-avatar msg-avatar-ai">
+            <image src="/images/ai_avatar.png" mode="aspectFill" />
+          </view>
+          <view class="msg-bubble msg-bubble-ai msg-bubble-loading">
+            <view class="typing-dots">
+              <view class="typing-dot"></view>
+              <view class="typing-dot"></view>
+              <view class="typing-dot"></view>
+            </view>
+            <text class="loading-text">AI正在思考中...</text>
+          </view>
+        </view>
+
+      </block>
+    </view>
+
+    <!-- 底部占位，避免最后一条被输入框遮挡 -->
+    <view class="chat-bottom-spacer" />
+  </scroll-view>
+
+  <!-- 模式切换 -->
+  <view class="mode-bar">
+    <view class="mode-btn {{mode === 'recommend' ? 'mode-active' : ''}}"
+          bindtap="onSwitchMode" data-mode="recommend">🛒 选购推荐</view>
+    <view class="mode-btn {{mode === 'qa' ? 'mode-active' : ''}}"
+          bindtap="onSwitchMode" data-mode="qa">💬 知识问答</view>
+  </view>
+
+  <!-- 底部输入区 -->
+  <view class="input-bar">
+    <view class="input-box">
+      <textarea
+        class="input-textarea"
+        value="{{inputText}}"
+        placeholder="输入你的需求，如：适合老人吃的金柚..."
+        placeholder-style="color:#bbb;font-size:28rpx;"
+        bindinput="onInput"
+        adjust-position="{{false}}"
+        auto-height
+        maxlength="300"
+        cursor-spacing="12"
+        show-confirm-bar="{{false}}"
+        confirm-type="send"
+        bindconfirm="onSend"
+        disabled="{{loading}}"
+      />
+    </view>
+    <view class="send-btn {{inputText ? 'send-btn-active' : ''}}" bindtap="onSend">
+      <text>发送</text>
+    </view>
+  </view>
+</view>
