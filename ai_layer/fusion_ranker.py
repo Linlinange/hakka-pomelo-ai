@@ -323,19 +323,24 @@ class FusionRanker:
     # ---- 权重加载 ----
 
     def _load_weights(self) -> dict[str, float]:
-        """从 algo_rule_params 表或默认值加载三维度权重"""
-        defaults = {"w_requirement": 0.40, "w_scene": 0.35, "w_hakka": 0.25}
+        """从 algo_rule_params 表或默认值加载三维度权重 + 融合权重"""
+        defaults = {
+            "w_requirement": 0.40, "w_scene": 0.35, "w_hakka": 0.25,
+            "w_fusion_rule": 0.50, "w_fusion_llm": 0.50,
+        }
         try:
             from .db import query_all
             rows = query_all(
                 """SELECT param_key, param_value FROM algo_rule_params
-                   WHERE param_group IN ('REQUIREMENT_MATCH','SCENE_FIT','HAKKA_FEATURE')
+                   WHERE param_group IN ('REQUIREMENT_MATCH','SCENE_FIT','HAKKA_FEATURE','FUSION')
                    AND param_type = 'WEIGHT' AND status = 1"""
             )
             key_map = {
                 "weight_requirement_match": "w_requirement",
                 "weight_scene_fit": "w_scene",
                 "weight_hakka_feature": "w_hakka",
+                "weight_fusion_rule": "w_fusion_rule",
+                "weight_fusion_llm": "w_fusion_llm",
             }
             for r in rows:
                 mapped = key_map.get(r["param_key"])
@@ -344,11 +349,22 @@ class FusionRanker:
         except Exception as exc:
             logger.warning("从DB加载权重失败，使用默认值: %s", exc)
 
-        total = sum(defaults.values())
-        if total > 0 and abs(total - 1.0) > 0.001:
-            defaults = {k: v / total for k, v in defaults.items()}
-        logger.info("规则打分权重: requirement=%.2f scene=%.2f hakka=%.2f",
-                    defaults["w_requirement"], defaults["w_scene"], defaults["w_hakka"])
+        # 分别归一化两个独立权重组
+        dim_keys = ["w_requirement", "w_scene", "w_hakka"]
+        dim_total = sum(defaults[k] for k in dim_keys)
+        if dim_total > 0 and abs(dim_total - 1.0) > 0.001:
+            for k in dim_keys:
+                defaults[k] = defaults[k] / dim_total
+
+        fusion_keys = ["w_fusion_rule", "w_fusion_llm"]
+        fusion_total = sum(defaults[k] for k in fusion_keys)
+        if fusion_total > 0 and abs(fusion_total - 1.0) > 0.001:
+            for k in fusion_keys:
+                defaults[k] = defaults[k] / fusion_total
+
+        logger.info("权重: 维度 req=%.2f scene=%.2f hakka=%.2f | 融合 rule=%.2f llm=%.2f",
+                    defaults["w_requirement"], defaults["w_scene"], defaults["w_hakka"],
+                    defaults["w_fusion_rule"], defaults["w_fusion_llm"])
         return defaults
 
     # ---- 2. 大模型语义打分 ----
@@ -440,14 +456,13 @@ class FusionRanker:
 
     # ---- 3. 融合公式 ----
 
-    @staticmethod
-    def _fuse(s: ScoredCandidate, rule_weight: float = 0.50, llm_weight: float = 0.50) -> float:
+    def _fuse(self, s: ScoredCandidate) -> float:
         """
-        融合公式：final = rule_weight * rule_100 + llm_weight * llm_score
+        融合公式：final = w_fusion_rule * rule_100 + w_fusion_llm * llm_score
         规则总分 (0-10) 先放大到 0-100 与 LLM 对齐，再按权重加权。
         """
         rule_100 = s.rule_total * 10.0  # 0-10 → 0-100
-        return rule_weight * rule_100 + llm_weight * s.llm_score
+        return self._weights["w_fusion_rule"] * rule_100 + self._weights["w_fusion_llm"] * s.llm_score
 
     # ---- 4. 推荐理由生成 ----
 
