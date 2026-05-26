@@ -70,33 +70,21 @@ class PromptLoader:
     def _load_from_db(self, scene_category: str) -> Optional[dict]:
         """从 MySQL pomelo_prompt_library 表加载当前启用版本"""
         try:
-            import pymysql
-            cfg = get_config()
-            conn = pymysql.connect(
-                host=cfg.db_host, port=cfg.db_port,
-                user=cfg.db_user, password=cfg.db_password,
-                database=cfg.db_name, charset="utf8mb4",
-                connect_timeout=5,
+            from .db import query_one
+            row = query_one(
+                """SELECT system_role_desc, prompt_template, variables_schema, version
+                   FROM pomelo_prompt_library
+                   WHERE scene_category = %s AND is_current = 1 AND status = 1
+                   ORDER BY priority DESC LIMIT 1""",
+                (scene_category,),
             )
-            try:
-                with conn.cursor(pymysql.cursors.DictCursor) as cur:
-                    cur.execute(
-                        """SELECT system_role_desc, prompt_template, variables_schema, version
-                           FROM pomelo_prompt_library
-                           WHERE scene_category = %s AND is_current = 1 AND status = 1
-                           ORDER BY priority DESC LIMIT 1""",
-                        (scene_category,),
-                    )
-                    row = cur.fetchone()
-                    if row:
-                        return {
-                            "system_role_desc": row["system_role_desc"],
-                            "prompt_template": row["prompt_template"],
-                            "variables_schema": row["variables_schema"],
-                            "version": row.get("version", "1.0.0"),
-                        }
-            finally:
-                conn.close()
+            if row:
+                return {
+                    "system_role_desc": row["system_role_desc"],
+                    "prompt_template": row["prompt_template"],
+                    "variables_schema": row["variables_schema"],
+                    "version": row.get("version", "1.0.0"),
+                }
         except Exception as exc:
             logger.warning("从数据库加载Prompt模板失败，使用默认模板: %s", exc)
         return None

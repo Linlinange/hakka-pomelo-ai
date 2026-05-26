@@ -14,7 +14,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional, Any
 
-from .config import get_config
 from .llm_adapter import LLMAdapter, create_adapter
 from .exceptions import LLMException
 
@@ -327,33 +326,21 @@ class FusionRanker:
         """从 algo_rule_params 表或默认值加载三维度权重"""
         defaults = {"w_requirement": 0.40, "w_scene": 0.35, "w_hakka": 0.25}
         try:
-            import pymysql
-            cfg = get_config()
-            conn = pymysql.connect(
-                host=cfg.db_host, port=cfg.db_port,
-                user=cfg.db_user, password=cfg.db_password,
-                database=cfg.db_name, charset="utf8mb4",
-                connect_timeout=5,
+            from .db import query_all
+            rows = query_all(
+                """SELECT param_key, param_value FROM algo_rule_params
+                   WHERE param_group IN ('REQUIREMENT_MATCH','SCENE_FIT','HAKKA_FEATURE')
+                   AND param_type = 'WEIGHT' AND status = 1"""
             )
-            try:
-                with conn.cursor(pymysql.cursors.DictCursor) as cur:
-                    cur.execute(
-                        """SELECT param_key, param_value FROM algo_rule_params
-                           WHERE param_group IN ('REQUIREMENT_MATCH','SCENE_FIT','HAKKA_FEATURE')
-                           AND param_type = 'WEIGHT' AND status = 1"""
-                    )
-                    rows = cur.fetchall()
-                    key_map = {
-                        "weight_requirement_match": "w_requirement",
-                        "weight_scene_fit": "w_scene",
-                        "weight_hakka_feature": "w_hakka",
-                    }
-                    for r in rows:
-                        mapped = key_map.get(r["param_key"])
-                        if mapped:
-                            defaults[mapped] = float(r["param_value"])
-            finally:
-                conn.close()
+            key_map = {
+                "weight_requirement_match": "w_requirement",
+                "weight_scene_fit": "w_scene",
+                "weight_hakka_feature": "w_hakka",
+            }
+            for r in rows:
+                mapped = key_map.get(r["param_key"])
+                if mapped:
+                    defaults[mapped] = float(r["param_value"])
         except Exception as exc:
             logger.warning("从DB加载权重失败，使用默认值: %s", exc)
 

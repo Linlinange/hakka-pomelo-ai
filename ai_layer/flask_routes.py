@@ -399,30 +399,19 @@ _STATIC_KNOWLEDGE = [
 def _load_knowledge_from_db():
     """尝试从 MySQL 加载金柚知识库，失败则返回静态数据"""
     try:
-        import pymysql
-        cfg = get_config()
-        conn = pymysql.connect(
-            host=cfg.db_host, port=cfg.db_port,
-            user=cfg.db_user, password=cfg.db_password,
-            database=cfg.db_name, charset="utf8mb4",
+        from .db import query_all
+        rows = query_all(
+            "SELECT id, pomelo_name, category, origin, specification, "
+            "price_range, taste_description, hakka_culture_relation, "
+            "gift_scene_tags, tags, image_url, "
+            "score_requirement_match, score_scene_fit, score_hakka_feature "
+            "FROM golden_pomelo_knowledge WHERE status=1 AND is_deleted=0 "
+            "ORDER BY view_count DESC LIMIT 20",
             connect_timeout=3,
         )
-        try:
-            with conn.cursor(pymysql.cursors.DictCursor) as cur:
-                cur.execute(
-                    "SELECT id, pomelo_name, category, origin, specification, "
-                    "price_range, taste_description, hakka_culture_relation, "
-                    "gift_scene_tags, tags, image_url, "
-                    "score_requirement_match, score_scene_fit, score_hakka_feature "
-                    "FROM golden_pomelo_knowledge WHERE status=1 AND is_deleted=0 "
-                    "ORDER BY view_count DESC LIMIT 20"
-                )
-                rows = cur.fetchall()
-                if rows:
-                    _log.info("从MySQL加载知识库: %d条", len(rows))
-                    return rows
-        finally:
-            conn.close()
+        if rows:
+            _log.info("从MySQL加载知识库: %d条", len(rows))
+            return rows
     except Exception as exc:
         _log.info("MySQL不可用，使用静态知识库数据: %s", exc)
     return _STATIC_KNOWLEDGE
