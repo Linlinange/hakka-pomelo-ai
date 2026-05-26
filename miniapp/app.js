@@ -1,9 +1,18 @@
 /**
  * 客家金柚AI智荐 - 微信小程序入口
+ *
+ * 部署时修改 apiBaseUrl：
+ *   开发环境: http://127.0.0.1:8080
+ *   生产环境: https://your-domain.com
  */
 App({
+  globalData: {
+    userInfo: null,
+    token: '',
+    apiBaseUrl: 'http://127.0.0.1:8080',
+  },
+
   onLaunch() {
-    // 获取用户本地 Token，若无则走微信登录流程
     const token = wx.getStorageSync('token');
     if (!token) {
       this._wxLogin();
@@ -14,9 +23,8 @@ App({
     wx.login({
       success: res => {
         if (res.code) {
-          // 将 code 发送到后端换取 openid 和 token
           wx.request({
-            url: 'http://127.0.0.1:8080/api/login',
+            url: this.globalData.apiBaseUrl + '/api/login',
             method: 'POST',
             data: { code: res.code },
             success: resp => {
@@ -29,9 +37,4 @@ App({
       }
     });
   },
-
-  globalData: {
-    userInfo: null,
-    token: '',
-  }
 });

@@ -5,7 +5,10 @@
  * - 请求/响应日志
  */
 
-const BASE_URL = 'http://127.0.0.1:8080/api';
+function getBaseUrl() {
+  const app = getApp();
+  return (app.globalData.apiBaseUrl || 'http://127.0.0.1:8080') + '/api';
+}
 
 // 获取存储的 Token（微信登录后由 App.js 写入）
 function getToken() {
@@ -36,7 +39,7 @@ function post(path, data = {}, options = {}) {
 
   return new Promise((resolve, reject) => {
     wx.request({
-      url: BASE_URL + path,
+      url: getBaseUrl() + path,
       method: 'POST',
       header: {
         'Content-Type': 'application/json',
@@ -111,7 +114,7 @@ function get(path, params = {}) {
     .filter(k => params[k] !== undefined && params[k] !== null && params[k] !== '')
     .map(k => k + '=' + encodeURIComponent(params[k]))
     .join('&');
-  const url = BASE_URL + path + (qs ? '?' + qs : '');
+  const url = getBaseUrl() + path + (qs ? '?' + qs : '');
   return new Promise((resolve, reject) => {
     wx.request({
       url,
@@ -136,7 +139,7 @@ function get(path, params = {}) {
 function put(path, data = {}) {
   return new Promise((resolve, reject) => {
     wx.request({
-      url: BASE_URL + path,
+      url: getBaseUrl() + path,
       method: 'PUT',
       header: {
         'Content-Type': 'application/json',
@@ -160,7 +163,7 @@ function put(path, data = {}) {
 function del(path) {
   return new Promise((resolve, reject) => {
     wx.request({
-      url: BASE_URL + path,
+      url: getBaseUrl() + path,
       method: 'DELETE',
       header: {
         'Authorization': 'Bearer ' + getToken(),
@@ -211,5 +214,4 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   generateContent,
-  BASE_URL,
 };
