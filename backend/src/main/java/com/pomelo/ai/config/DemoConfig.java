@@ -1,34 +1,18 @@
 package com.pomelo.ai.config;
 
-import org.springframework.context.annotation.Bean;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 
 /**
- * 演示模式配置 — 提供 Redis Mock（无需外部 Redis）。
+ * 演示模式配置 — 完全禁用 Redis，无需外部依赖。
+ * Redis 相关的自动配置已在 application-demo.properties 中排除，
+ * 本类仅用于激活 demo profile 的组件扫描。
  */
 @Configuration
 @Profile("demo")
 public class DemoConfig {
-
-    @Bean
-    @Primary
-    public RedisConnectionFactory redisConnectionFactory() {
-        return new org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory() {
-            @Override public void afterPropertiesSet() {}
-            @Override public void destroy() {}
-        };
-    }
-
-    @Bean
-    @Primary
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
-        RedisTemplate<String, Object> t = new RedisTemplate<>();
-        t.setConnectionFactory(factory);
-        t.afterPropertiesSet();
-        return t;
-    }
+    // Redis 被完全禁用。服务层中的 Redis 操作由 @Autowired(required=false) 或
+    // Optional<RedisTemplate> 的方式做空安全处理——详见各 ServiceImpl。
 }

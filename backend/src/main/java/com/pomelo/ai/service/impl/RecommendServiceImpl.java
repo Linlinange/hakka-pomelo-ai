@@ -12,8 +12,8 @@ import com.pomelo.ai.mapper.LlmInvokeLogMapper;
 import com.pomelo.ai.mapper.PomeloKnowledgeMapper;
 import com.pomelo.ai.service.RecommendService;
 import com.pomelo.ai.utils.HttpUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,14 +35,25 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RecommendServiceImpl implements RecommendService {
 
     private final PomeloKnowledgeMapper knowledgeMapper;
     private final LlmInvokeLogMapper llmInvokeLogMapper;
     private final HttpUtils httpUtils;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
+
+    public RecommendServiceImpl(PomeloKnowledgeMapper knowledgeMapper,
+                                LlmInvokeLogMapper llmInvokeLogMapper,
+                                HttpUtils httpUtils,
+                                ObjectMapper objectMapper) {
+        this.knowledgeMapper = knowledgeMapper;
+        this.llmInvokeLogMapper = llmInvokeLogMapper;
+        this.httpUtils = httpUtils;
+        this.objectMapper = objectMapper;
+    }
 
     @Value("${pomelo.cache.recommend-ttl:1800}")
     private int cacheTtl;
@@ -58,7 +69,7 @@ public class RecommendServiceImpl implements RecommendService {
         String cacheKey = CACHE_KEY_PREFIX + Math.abs(query.hashCode());
 
         // ---- 1. 尝试从 Redis 缓存读取 ----
-        if (!Boolean.TRUE.equals(request.getSkipCache())) {
+        if (redisTemplate != null && !Boolean.TRUE.equals(request.getSkipCache())) {
             Object cached = redisTemplate.opsForValue().get(cacheKey);
             if (cached instanceof Map<?, ?> map) {
                 @SuppressWarnings("unchecked")
@@ -109,7 +120,9 @@ public class RecommendServiceImpl implements RecommendService {
                 .costMs(System.currentTimeMillis() - startTime)
                 .build();
 
-        redisTemplate.opsForValue().set(cacheKey, response, cacheTtl, TimeUnit.SECONDS);
+        if (redisTemplate != null) {
+            redisTemplate.opsForValue().set(cacheKey, response, cacheTtl, TimeUnit.SECONDS);
+        }
         log.info("推荐完成: query={} intent={} count={} costMs={}",
                 query.substring(0, Math.min(query.length(), 30)),
                 response.getIntentType(), count, response.getCostMs());

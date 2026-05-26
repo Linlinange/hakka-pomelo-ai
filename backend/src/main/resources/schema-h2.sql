@@ -19,9 +19,17 @@ CREATE TABLE IF NOT EXISTS golden_pomelo_knowledge (
     category VARCHAR(32),
     origin VARCHAR(256),
     specification VARCHAR(128),
+    weight_range VARCHAR(64),
     price_range VARCHAR(64),
-    taste_description VARCHAR(512),
+    season_info VARCHAR(128),
+    cultivation_process TEXT,
     hakka_culture_relation TEXT,
+    identification_tips TEXT,
+    preservation_method TEXT,
+    edible_pairing TEXT,
+    nutritional_value TEXT,
+    taste_description VARCHAR(512),
+    story_content TEXT,
     gift_scene_tags VARCHAR(256),
     tags VARCHAR(256),
     image_url VARCHAR(512),
@@ -29,6 +37,7 @@ CREATE TABLE IF NOT EXISTS golden_pomelo_knowledge (
     score_scene_fit DECIMAL(3,2) DEFAULT 5.00,
     score_hakka_feature DECIMAL(3,2) DEFAULT 5.00,
     view_count INT DEFAULT 0,
+    rec_count INT DEFAULT 0,
     status TINYINT DEFAULT 1,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -94,7 +103,9 @@ INSERT INTO golden_pomelo_knowledge (pomelo_name, category, origin, price_range,
 INSERT INTO algo_rule_params (param_key, param_name, param_value, param_type, param_group, param_range, description, sort_order) VALUES
 ('weight_requirement_match', '需求匹配度权重', 0.40, 'WEIGHT', 'REQUIREMENT_MATCH', '0.00-1.00', '大模型语义理解后的关键词与金柚属性匹配权重', 1),
 ('weight_scene_fit', '场景适配度权重', 0.35, 'WEIGHT', 'SCENE_FIT', '0.00-1.00', '用户送礼/自用/宴请等场景与金柚的适配权重', 1),
-('weight_hakka_feature', '客家特色贴合度权重', 0.25, 'WEIGHT', 'HAKKA_FEATURE', '0.00-1.00', '金柚与客家文化、地域特色的贴合度权重', 1);
+('weight_hakka_feature', '客家特色贴合度权重', 0.25, 'WEIGHT', 'HAKKA_FEATURE', '0.00-1.00', '金柚与客家文化、地域特色的贴合度权重', 1),
+('weight_fusion_rule', '融合排序-规则权重', 0.50, 'WEIGHT', 'FUSION', '0.00-1.00', '融合公式中规则式打分的权重', 1),
+('weight_fusion_llm', '融合排序-LLM权重', 0.50, 'WEIGHT', 'FUSION', '0.00-1.00', '融合公式中大模型语义打分的权重', 2);
 
 -- 初始数据：Prompt模板
 INSERT INTO pomelo_prompt_library (prompt_name, scene_category, applicable_scene, prompt_template, system_role_desc, is_current, priority) VALUES

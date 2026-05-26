@@ -9,8 +9,8 @@ import com.pomelo.ai.mapper.LlmInvokeLogMapper;
 import com.pomelo.ai.mapper.PomeloKnowledgeMapper;
 import com.pomelo.ai.service.QaService;
 import com.pomelo.ai.utils.HttpUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -32,14 +32,25 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class QaServiceImpl implements QaService {
 
     private final PomeloKnowledgeMapper knowledgeMapper;
     private final LlmInvokeLogMapper llmInvokeLogMapper;
     private final HttpUtils httpUtils;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
+
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
+
+    public QaServiceImpl(PomeloKnowledgeMapper knowledgeMapper,
+                         LlmInvokeLogMapper llmInvokeLogMapper,
+                         HttpUtils httpUtils,
+                         ObjectMapper objectMapper) {
+        this.knowledgeMapper = knowledgeMapper;
+        this.llmInvokeLogMapper = llmInvokeLogMapper;
+        this.httpUtils = httpUtils;
+        this.objectMapper = objectMapper;
+    }
 
     @Value("${pomelo.cache.qa-ttl:3600}")
     private int cacheTtl;
@@ -56,13 +67,15 @@ public class QaServiceImpl implements QaService {
         String cacheKey = CACHE_KEY_PREFIX + Math.abs(question.hashCode());
 
         // ---- 1. Redis 缓存 ----
-        Object cached = redisTemplate.opsForValue().get(cacheKey);
-        if (cached instanceof Map<?, ?> map) {
-            @SuppressWarnings("unchecked")
-            QaResponse resp = objectMapper.convertValue(map, QaResponse.class);
-            resp.setCostMs(System.currentTimeMillis() - startTime);
-            log.info("问答命中缓存: question={}", question.substring(0, Math.min(question.length(), 30)));
-            return resp;
+        if (redisTemplate != null) {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof Map<?, ?> map) {
+                @SuppressWarnings("unchecked")
+                QaResponse resp = objectMapper.convertValue(map, QaResponse.class);
+                resp.setCostMs(System.currentTimeMillis() - startTime);
+                log.info("问答命中缓存: question={}", question.substring(0, Math.min(question.length(), 30)));
+                return resp;
+            }
         }
 
         // ---- 2. 提取关键词 ----
@@ -70,14 +83,18 @@ public class QaServiceImpl implements QaService {
 
         // ---- 3. 知识库检索 ----
         List<GoldenPomeloKnowledge> matched = new ArrayList<>();
-        for (String kw : keywords) {
-            if (kw.length() < 2) continue;
-            List<GoldenPomeloKnowledge> results = knowledgeMapper.searchByKeyword(kw, 5);
-            for (GoldenPomeloKnowledge r : results) {
-                if (matched.stream().noneMatch(m -> m.getId().equals(r.getId()))) {
-                    matched.add(r);
+        try {
+            for (String kw : keywords) {
+                if (kw.length() < 2) continue;
+                List<GoldenPomeloKnowledge> results = knowledgeMapper.searchByKeyword(kw, 5);
+                for (GoldenPomeloKnowledge r : results) {
+                    if (matched.stream().noneMatch(m -> m.getId().equals(r.getId()))) {
+                        matched.add(r);
+                    }
                 }
             }
+        } catch (Exception e) {
+            log.warn("知识库检索失败（H2不支持全文搜索），回退到大模型回答: {}", e.getMessage());
         }
         log.info("知识库检索: keywords={}, matched={}", keywords, matched.size());
 
@@ -90,7 +107,9 @@ public class QaServiceImpl implements QaService {
         }
 
         response.setCostMs(System.currentTimeMillis() - startTime);
-        redisTemplate.opsForValue().set(cacheKey, response, cacheTtl, TimeUnit.SECONDS);
+        if (redisTemplate != null) {
+            redisTemplate.opsForValue().set(cacheKey, response, cacheTtl, TimeUnit.SECONDS);
+        }
         return response;
     }
 
