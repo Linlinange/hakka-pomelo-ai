@@ -100,7 +100,7 @@
         class="input-textarea"
         value="{{inputText}}"
         placeholder="输入你的需求，如：适合老人吃的金柚..."
-        placeholder-style="color:#bbb;font-size:28rpx;"
+        placeholder-style="color:#c4b8a2;font-size:28rpx;"
         bindinput="onInput"
         adjust-position="{{false}}"
         auto-height
