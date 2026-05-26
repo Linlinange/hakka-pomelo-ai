@@ -31,6 +31,10 @@ web/dist/
 # Vite cache
 web/.vite/
 
+# WeChat DevTools
+project.config.json
+project.private.config.json
+
 # Uploads / temp
 *.tmp
 temp/
