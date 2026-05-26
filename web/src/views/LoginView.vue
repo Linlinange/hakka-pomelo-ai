@@ -40,6 +40,6 @@ async function doLogin() {
 .login-card { text-align: center; max-width: 400px; width: 100%; padding: 40px 32px; }
 .login-icon { font-size: 64px; margin-bottom: 16px; }
 h2 { margin-bottom: 8px; }
-.desc { color: #999; margin-bottom: 28px; font-size: 14px; }
-.note { margin-top: 16px; font-size: 12px; color: #bbb; }
+.desc { color: var(--text-placeholder); margin-bottom: 28px; font-size: 14px; }
+.note { margin-top: 16px; font-size: 12px; color: var(--text-placeholder); }
 </style>

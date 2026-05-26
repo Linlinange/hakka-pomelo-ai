@@ -66,7 +66,7 @@ async function updateParam(id, value) {
       <div class="card list-item" v-for="item in (tab === 'knowledge' ? knowledgeList : promptList)" :key="item.id">
         <div style="flex:1;overflow:hidden;">
           <div style="font-weight:600;">{{ item.pomeloName || item.promptName }}</div>
-          <div style="font-size:12px;color:#999;margin-top:4px;">
+          <div style="font-size:12px;color:var(--text-placeholder);margin-top:4px;">
             {{ item.origin || '' }}{{ item.category ? ' · ' + item.category : '' }}
             {{ item.sceneCategory || '' }}{{ item.version ? ' v' + item.version : '' }}
           </div>
@@ -83,7 +83,7 @@ async function updateParam(id, value) {
       <div class="card list-item" v-for="p in algoParams" :key="p.id">
         <div style="flex:1;">
           <div style="font-weight:600;">{{ p.paramName }} <span class="tag">{{ p.paramGroup }}</span></div>
-          <div style="font-size:12px;color:#999;">{{ p.description }}</div>
+          <div style="font-size:12px;color:var(--text-placeholder);">{{ p.description }}</div>
         </div>
         <input class="input" style="width:100px;text-align:center;" type="number" step="0.01"
                :value="p.paramValue" @change="updateParam(p.id, $event.target.value)" />
@@ -118,9 +118,9 @@ async function updateParam(id, value) {
 
 <style scoped>
 .tabs { display: flex; gap: 12px; margin-bottom: 20px; }
-.tab { padding: 8px 20px; border-radius: 16px; border: 1px solid #ece4d0; background: #fff; cursor: pointer; font-size: 13px; }
-.tab.active { background: #d4a843; color: #fff; border-color: #d4a843; }
+.tab { padding: 8px 20px; border-radius: 16px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; font-size: 13px; }
+.tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 .list-item { display: flex; align-items: center; gap: 16px; }
 .modal-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
-.modal { background: #fff; border-radius: 16px; padding: 28px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal { background: var(--bg-card); border-radius: 16px; padding: 28px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
 </style>

@@ -48,11 +48,11 @@ async function copy() {
 
 <style scoped>
 .tabs { display: flex; gap: 12px; margin-bottom: 20px; }
-.tab { flex: 1; padding: 10px; border-radius: 14px; border: 1px solid #ece4d0; background: #fff; cursor: pointer; font-size: 14px; }
-.tab.active { background: #d4a843; color: #fff; border-color: #d4a843; }
+.tab { flex: 1; padding: 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; font-size: 14px; }
+.tab.active { background: var(--gold); color: #fff; border-color: var(--gold); }
 .form-item { margin-bottom: 16px; }
-.form-item label { display: block; margin-bottom: 8px; font-size: 13px; color: #666; }
+.form-item label { display: block; margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); }
 .result-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-.result-time { font-size: 12px; color: #bbb; }
-.result-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; background: #faf8f0; padding: 16px; border-radius: 12px; }
+.result-time { font-size: 12px; color: var(--text-placeholder); }
+.result-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; background: var(--bg-warm); padding: 16px; border-radius: 12px; }
 </style>

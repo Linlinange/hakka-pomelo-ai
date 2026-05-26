@@ -46,11 +46,11 @@ function askAbout() {
 </template>
 
 <style scoped>
-.detail-name { font-size: 22px; font-weight: 800; margin-bottom: 16px; }
+.detail-name { font-size: 22px; font-weight: 800; margin-bottom: 16px; color: var(--text-heading); }
 .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.meta-grid div { padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
-.ml { color: #999; font-size: 12px; display: block; margin-bottom: 4px; }
-.price { color: #e8684a; font-weight: 600; }
-.card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: #5a4636; }
+.meta-grid div { padding: 8px 0; border-bottom: 1px solid var(--border-light); font-size: 14px; }
+.ml { color: var(--text-placeholder); font-size: 12px; display: block; margin-bottom: 4px; }
+.price { color: var(--primary); font-weight: 600; }
+.card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; color: var(--text-heading); }
 .card p { font-size: 14px; line-height: 1.8; }
 </style>
