@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+All environment variables are documented in `.env.example`.
+
 ### Python AI Layer (port 5000)
 
 ```bash
