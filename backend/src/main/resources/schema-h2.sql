@@ -2,12 +2,16 @@
 CREATE TABLE IF NOT EXISTS sys_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     openid VARCHAR(128) NOT NULL,
+    unionid VARCHAR(128),
     nickname VARCHAR(64),
     avatar_url VARCHAR(512),
     phone VARCHAR(20),
     gender TINYINT DEFAULT 0,
+    province VARCHAR(32),
+    city VARCHAR(32),
     status TINYINT DEFAULT 1,
     last_login_time TIMESTAMP,
+    remark VARCHAR(512),
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_deleted TINYINT DEFAULT 0
