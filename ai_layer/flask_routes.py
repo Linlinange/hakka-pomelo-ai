@@ -381,22 +381,12 @@ def _free_chat_recommend(user_query: str, intent_result) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 5. 知识库只读接口（DB 直连 + 静态兜底）
+# 5. 知识库只读接口
 # ---------------------------------------------------------------------------
-
-# 静态兜底数据（MySQL 不可用时使用）
-_STATIC_KNOWLEDGE = [
-    {"id":1,"pomelo_name":"梅县松口沙田柚·金奖优选","category":"沙田柚","origin":"梅州市梅县区松口镇","price_range":"88-128元/箱","taste_description":"清甜化渣、蜜香浓郁、回甘持久","hakka_culture_relation":"松口是客家人下南洋的起点，中秋赏月必备","gift_scene_tags":"中秋送礼,春节年货,团圆家宴","tags":"金奖,送礼首选,非遗工艺","image_url":"","score_requirement_match":8.5,"score_scene_fit":9.0,"score_hakka_feature":9.5},
-    {"id":2,"pomelo_name":"大埔蜜柚·生态红肉","category":"蜜柚","origin":"梅州市大埔县","price_range":"45-68元/箱","taste_description":"果肉绯红、酸甜适口、汁水丰盈","hakka_culture_relation":"大埔是客家香格里拉，红肉蜜柚象征客家人热情好客","gift_scene_tags":"日常送礼,尝鲜自用,家庭分享","tags":"高性价比,红肉,生态种植","image_url":"","score_requirement_match":7.0,"score_scene_fit":6.5,"score_hakka_feature":7.0},
-    {"id":3,"pomelo_name":"梅州金柚·客家情礼盒","category":"沙田柚","origin":"梅州市梅江区","price_range":"68-98元/盒","taste_description":"果肉晶莹、蜜甜无渣、香气馥郁","hakka_culture_relation":"以柚待客千年礼仪传统","gift_scene_tags":"商务送礼,中秋送礼,高端伴手礼","tags":"精品,客家礼仪","image_url":"","score_requirement_match":9.0,"score_scene_fit":8.5,"score_hakka_feature":9.0},
-    {"id":4,"pomelo_name":"蕉岭富硒柚·长寿之乡","category":"沙田柚","origin":"梅州市蕉岭县","price_range":"78-118元/箱","taste_description":"清甜爽脆、回味悠长","hakka_culture_relation":"蕉岭是世界长寿乡，富硒金柚被客家人视为长寿果","gift_scene_tags":"孝敬长辈,养生送礼","tags":"富硒,长寿乡,养生","image_url":"","score_requirement_match":8.5,"score_scene_fit":8.5,"score_hakka_feature":9.0},
-    {"id":5,"pomelo_name":"五华高山柚·有机认证","category":"沙田柚","origin":"梅州市五华县","price_range":"108-168元/箱","taste_description":"高山清泉灌溉、果肉细腻、冰糖甜","hakka_culture_relation":"五华是石匠之乡，高山柚被客家人称为山珍柚","gift_scene_tags":"高端送礼,养生送礼","tags":"有机,高山,送礼","image_url":"","score_requirement_match":8.0,"score_scene_fit":8.0,"score_hakka_feature":8.5},
-    {"id":6,"pomelo_name":"平远慈柚·客家福果","category":"沙田柚","origin":"梅州市平远县","price_range":"68-98元/箱","taste_description":"果肉蜜甜、入口即化、柚香绵长","hakka_culture_relation":"客家人称金柚为慈柚，寓意慈母之爱、福运绵长","gift_scene_tags":"孝敬父母,感恩送礼","tags":"慈柚,福果","image_url":"","score_requirement_match":8.0,"score_scene_fit":9.0,"score_hakka_feature":9.5},
-]
 
 
 def _load_knowledge_from_db():
-    """尝试从 MySQL 加载金柚知识库，失败则返回静态数据"""
+    """从 MySQL 加载金柚知识库，失败返回空列表"""
     try:
         from .db import query_all
         rows = query_all(
@@ -412,8 +402,8 @@ def _load_knowledge_from_db():
             _log.info("从MySQL加载知识库: %d条", len(rows))
             return rows
     except Exception as exc:
-        _log.info("MySQL不可用，使用静态知识库数据: %s", exc)
-    return _STATIC_KNOWLEDGE
+        _log.warning("MySQL不可用，知识库返回空列表: %s", exc)
+    return []
 
 
 @api_bp.route("/knowledge", methods=["GET"])
