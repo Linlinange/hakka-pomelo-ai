@@ -5,6 +5,9 @@ spring:
   application:
     name: pomelo-ai-backend
 
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:127.0.0.1}:${DB_PORT:3306}/golden_pomelo_ai?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai

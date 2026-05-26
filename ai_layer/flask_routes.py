@@ -78,10 +78,9 @@ def recommend():
         intent_result = _intent_recognizer.recognize(user_query)
         demand = UserDemand.from_intent_result(user_query, intent_result)
 
-        # 2. 解析候选金柚
+        # 2. 解析候选金柚（Spring Boot 全局 SNAKE_CASE，字段名已统一）
         if raw_candidates:
-            normalized = [_normalize_candidate_fields(c) for c in raw_candidates]
-            candidates = parse_candidates_from_rows(normalized)
+            candidates = parse_candidates_from_rows(raw_candidates)
 
             # 3a. 有候选 → 融合推荐排序
             scored_list = _fusion_ranker.rank(demand, candidates)
@@ -445,29 +444,6 @@ def health():
 # ---------------------------------------------------------------------------
 # 内部辅助
 # ---------------------------------------------------------------------------
-
-
-# Spring Boot (Jackson) → Python (snake_case) 字段名映射
-_CAMEL_TO_SNAKE_MAP = {
-    "pomeloName": "pomelo_name", "priceRange": "price_range",
-    "tasteDescription": "taste_description", "hakkaCultureRelation": "hakka_culture_relation",
-    "giftSceneTags": "gift_scene_tags", "scoreRequirementMatch": "score_requirement_match",
-    "scoreSceneFit": "score_scene_fit", "scoreHakkaFeature": "score_hakka_feature",
-    "weightRange": "weight_range", "seasonInfo": "season_info",
-    "cultivationProcess": "cultivation_process", "identificationTips": "identification_tips",
-    "preservationMethod": "preservation_method", "ediblePairing": "edible_pairing",
-    "nutritionalValue": "nutritional_value", "storyContent": "story_content",
-    "imageUrl": "image_url", "viewCount": "view_count", "recCount": "rec_count",
-}
-
-
-def _normalize_candidate_fields(item: dict) -> dict:
-    """将 Spring Boot 传来的 camelCase 字段名转为 snake_case，兼容 parse_candidates_from_rows"""
-    normalized = {}
-    for key, value in item.items():
-        snake_key = _CAMEL_TO_SNAKE_MAP.get(key, key)
-        normalized[snake_key] = value
-    return normalized
 
 
 def _scored_to_dict(s: ScoredCandidate) -> dict:
