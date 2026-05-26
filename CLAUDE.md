@@ -62,7 +62,7 @@ WeChat MiniApp ──────┘         │                        │
                                                    Content Generation
 ```
 
-**Important dev routing note**: The Vite dev server (`vite.config.js`) proxies `/api` directly to Flask on port 5000, NOT to Spring Boot. The 使用说明书.md incorrectly states port 8080. This means the web frontend works in dev without Spring Boot for AI features, but knowledge/Prompt/admin CRUD endpoints require Spring Boot.
+**Dev routing**: The Vite dev server (`vite.config.js`) proxies `/api` to Spring Boot on port 8080, which then calls Flask on port 5000 for AI features. Both must be running for full functionality.
 
 ### Layers
 
