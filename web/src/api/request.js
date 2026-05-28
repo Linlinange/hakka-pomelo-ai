@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 统一 API 请求层
  * 与 Spring Boot 后端通信（开发环境通过 Vite proxy 代理到 8080）
  */
@@ -71,4 +71,11 @@ export const api = {
     return request('/algo-params' + qs, { silent: true })
   },
   updateAlgoParam: (id, data) => request('/algo-params/' + id, { method: 'PUT', body: data }),
+
+  // ---- 会话历史 ----
+  saveMessage: (msg) => request('/conversation/save', { method: 'POST', body: msg, silent: true }),
+  saveMessages: (msgs) => request('/conversation/save-batch', { method: 'POST', body: msgs, silent: true }),
+  getHistory: (sessionId, limit = 50) => request('/conversation/history?sessionId=' + encodeURIComponent(sessionId) + '&limit=' + limit, { silent: true }),
+  getSessions: (userId, limit = 20) => request('/conversation/sessions?userId=' + userId + '&limit=' + limit, { silent: true }),
+  deleteSession: (sessionId) => request('/conversation/sessions/' + encodeURIComponent(sessionId), { method: 'DELETE', silent: true }),
 }

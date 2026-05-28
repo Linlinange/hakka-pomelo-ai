@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 统一网络请求层
  * - 自动注入 Token
  * - 统一异常提示
@@ -203,6 +203,26 @@ function generateContent(data) {
   return post('/content', data);
 }
 
+
+/** 保存单条会话消息 */
+function saveMessage(msg) {
+  return post('/conversation/save', msg, { silent: true });
+}
+
+/** 获取会话历史 */
+function getHistory(sessionId, limit = 50) {
+  return get('/conversation/history', { sessionId, limit });
+}
+
+/** 获取用户会话列表 */
+function getSessions(userId, limit = 20) {
+  return get('/conversation/sessions', { userId, limit });
+}
+
+/** 删除会话 */
+function deleteSession(sessionId) {
+  return del('/conversation/sessions/' + encodeURIComponent(sessionId));
+}
 module.exports = {
   get,
   post,
@@ -214,4 +234,8 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   generateContent,
-};
+  saveMessage,
+  getHistory,
+  getSessions,
+  deleteSession,
+};;

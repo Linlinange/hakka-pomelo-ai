@@ -1,4 +1,4 @@
-"""
+﻿"""
 意图识别模块（Intent Recognizer）
 从数据库中读取金柚专属 Prompt 模板，动态拼接后调用大模型，
 将返回结果解析为结构化的意图数据。
@@ -322,11 +322,18 @@ class IntentResult:
             budget = int(budget_match.group(1))
             constraints["budget_max"] = budget
 
+        # 尝试用 jieba 提取关键词，失败则简单拆分
+        try:
+            from .text_utils import extract_keywords
+            keywords = extract_keywords(user_input, topk=5)
+        except Exception:
+            keywords = [w for w in user_input[:30].split() if len(w) > 1][:5]
+
         return cls(
             intent=intent,
             confidence=0.30,  # 规则兜底的置信度较低
             constraints=constraints,
-            keywords=[w for w in user_input[:30].split() if len(w) > 1][:5],
+            keywords=keywords,
             error=error,
         )
 

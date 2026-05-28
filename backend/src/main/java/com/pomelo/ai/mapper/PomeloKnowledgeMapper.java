@@ -19,7 +19,7 @@ public interface PomeloKnowledgeMapper extends BaseMapper<GoldenPomeloKnowledge>
     @Select("""
         SELECT * FROM golden_pomelo_knowledge
         WHERE is_deleted = 0 AND status = 1
-          AND (MATCH(pomelo_name, story_content, cultivation_process, edible_pairing) AGAINST(#{keyword} IN BOOLEAN MODE)
+          AND (MATCH(pomelo_name, taste_description, hakka_culture_relation, cultivation_process, edible_pairing) AGAINST(#{keyword} IN BOOLEAN MODE)
                OR pomelo_name LIKE CONCAT('%', #{keyword}, '%')
                OR tags LIKE CONCAT('%', #{keyword}, '%')
                OR origin LIKE CONCAT('%', #{keyword}, '%'))

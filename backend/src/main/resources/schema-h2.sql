@@ -1,4 +1,4 @@
--- H2 内存数据库初始化脚本（演示环境）
+﻿-- H2 内存数据库初始化脚本（演示环境）
 CREATE TABLE IF NOT EXISTS sys_user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     openid VARCHAR(128) NOT NULL,
@@ -116,3 +116,19 @@ INSERT INTO pomelo_prompt_library (prompt_name, scene_category, applicable_scene
 ('金柚选购推荐-标准版', 'BUY', '用户提供选购需求，系统推荐合适金柚', '你是一位精通梅州客家金柚的专业导购顾问。请根据以下用户需求推荐最合适的金柚产品：\n\n用户需求：{{user_input}}\n\n可选金柚数据：{{pomelo_list}}\n\n请以JSON格式返回推荐结果。', '你是梅州客家金柚文化传承人与专业导购', 1, 10),
 ('金柚知识问答-标准版', 'QA', '用户询问金柚相关知识', '你是客家金柚领域的资深专家。请基于以下知识库内容回答用户问题：\n\n用户问题：{{user_input}}\n\n相关知识：{{knowledge_context}}', '你是梅州客家金柚非遗传承人与农业专家', 1, 10),
 ('金柚内容生成-电商文案', 'GEN', '为指定金柚生成电商展示文案', '请为以下梅州客家金柚生成一段吸引人的展示文案：\n\n金柚信息：{{pomelo_info}}', '你是精通农产品电商文案的客家文化传播者', 1, 10);
+
+-- ============================================================
+-- 6. conversational messages (V1.2)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS conversation_message (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT DEFAULT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    role VARCHAR(16) NOT NULL,
+    msg_type VARCHAR(16) DEFAULT 'text',
+    content TEXT,
+    metadata_json TEXT DEFAULT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_conv_session ON conversation_message(session_id, create_time);
+CREATE INDEX IF NOT EXISTS idx_conv_user ON conversation_message(user_id, create_time);

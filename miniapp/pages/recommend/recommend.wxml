@@ -1,5 +1,28 @@
-<!-- AI智荐对话页面 -->
+﻿<!-- AI智荐对话页面 -->
 <view class="page">
+
+  <!-- 顶栏操作 -->
+  <view class="top-bar">
+    <view class="top-bar-left">
+      <text class="top-bar-title">客家金柚AI</text>
+    </view>
+    <view class="top-bar-right">
+      <view class="top-btn" bindtap="onToggleHistory">📋</view>
+      <view class="top-btn" bindtap="onNewChat">➕</view>
+      <view class="top-btn" bindtap="onDeleteSession" wx:if="{{messages.length > 0}}">🗑️</view>
+    </view>
+  </view>
+
+  <!-- 历史会话面板 -->
+  <view class="history-panel" wx:if="{{showHistory}}">
+    <view class="history-title">历史会话</view>
+    <view wx:if="{{sessionList.length === 0}}" class="history-empty">暂无历史会话</view>
+    <view wx:for="{{sessionList}}" wx:key="session_id" class="history-item"
+          data-sid="{{item.session_id}}" bindtap="onSwitchSession">
+      <text class="history-id">{{item.session_id}}</text>
+      <text class="history-meta">{{item.msg_count}} 条</text>
+    </view>
+  </view>
 
   <!-- 对话消息列表 -->
   <scroll-view
@@ -37,7 +60,6 @@
           </view>
           <view class="msg-bubble msg-bubble-ai">
             <text class="msg-text" wx:if="{{item.content}}">{{item.content}}</text>
-            <!-- 快捷提问按钮（仅首次欢迎消息显示） -->
             <view wx:if="{{item.content.includes('我是客家金柚AI导购')}}" class="quick-asks">
               <view class="quick-btn" bindtap="onQuickAsk" data-text="200元中秋送礼推荐什么金柚？">中秋送礼推荐</view>
               <view class="quick-btn" bindtap="onQuickAsk" data-text="适合老人吃的金柚有哪些？">适合老人的金柚</view>
@@ -45,14 +67,13 @@
           </view>
         </view>
 
-        <!-- === AI 推荐结果（含金柚卡片） === -->
+        <!-- === AI 推荐结果（含金柚卡片）=== -->
         <view wx:elif="{{item.role === 'ai' && item.type === 'recommend'}}" class="msg-row msg-row-ai" id="msg-{{item.id}}">
           <view class="msg-avatar msg-avatar-ai">
             <image src="/images/ai_avatar.png" mode="aspectFill" />
           </view>
           <view class="msg-bubble msg-bubble-ai msg-bubble-card">
             <text class="msg-text msg-summary" wx:if="{{item.content}}">{{item.content}}</text>
-            <!-- 金柚卡片列表（字段名对齐 Spring Boot RecommendResponse.recommendations） -->
             <pomelo-card
               wx:for="{{item.recommendations}}"
               wx:for-item="rec"
@@ -63,7 +84,7 @@
           </view>
         </view>
 
-        <!-- === AI 加载态（打字动画） === -->
+        <!-- === AI 加载态（打字动画）=== -->
         <view wx:elif="{{item.role === 'ai' && item.type === 'loading'}}" class="msg-row msg-row-ai" id="msg-{{item.id}}">
           <view class="msg-avatar msg-avatar-ai">
             <image src="/images/ai_avatar.png" mode="aspectFill" />
@@ -81,16 +102,15 @@
       </block>
     </view>
 
-    <!-- 底部占位，避免最后一条被输入框遮挡 -->
     <view class="chat-bottom-spacer" />
   </scroll-view>
 
   <!-- 模式切换 -->
   <view class="mode-bar">
     <view class="mode-btn {{mode === 'recommend' ? 'mode-active' : ''}}"
-          bindtap="onSwitchMode" data-mode="recommend">🛒 选购推荐</view>
+          bindtap="onSwitchMode" data-mode="recommend">🛅 选购推荐</view>
     <view class="mode-btn {{mode === 'qa' ? 'mode-active' : ''}}"
-          bindtap="onSwitchMode" data-mode="qa">💬 知识问答</view>
+          bindtap="onSwitchMode" data-mode="qa">📰 知识问答</view>
   </view>
 
   <!-- 底部输入区 -->
@@ -104,13 +124,14 @@
         bindinput="onInput"
         adjust-position="{{false}}"
         auto-height
-        maxlength="300"
+        maxlength="500"
         cursor-spacing="12"
         show-confirm-bar="{{false}}"
         confirm-type="send"
         bindconfirm="onSend"
         disabled="{{loading}}"
       />
+      <text class="input-count">{{inputText.length}}/500</text>
     </view>
     <view class="send-btn {{inputText ? 'send-btn-active' : ''}}" bindtap="onSend">
       <text>发送</text>

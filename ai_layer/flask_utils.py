@@ -1,4 +1,4 @@
-"""
+﻿"""
 Flask API 工具模块
 - 统一响应格式
 - 请求参数校验
@@ -60,6 +60,9 @@ def require_fields(*fields):
                 value = body.get(field)
                 if value is None or (isinstance(value, str) and not value.strip()):
                     return bad_request(f"缺少必要参数: {field}")
+                # 长度校验：防止滥用
+                if isinstance(value, str) and len(value) > 2000:
+                    return bad_request(f"参数 {field} 超过最大长度限制(2000字符)")
             return fn(*args, **kwargs)
 
         return wrapper

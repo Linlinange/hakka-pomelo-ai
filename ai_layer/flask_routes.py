@@ -1,4 +1,4 @@
-"""
+﻿"""
 Flask API 路由模块
 - POST /api/recommend    AI智荐推荐
 - POST /api/qa           智能问答
@@ -6,6 +6,7 @@ Flask API 路由模块
 - GET  /api/health        健康检查
 """
 
+import json
 import traceback
 import logging
 from flask import Blueprint, request
@@ -103,7 +104,7 @@ def recommend():
 
     except Exception:
         traceback.print_exc()
-        return fail(500, f"推荐服务异常: {traceback.format_exc()[-200:]}")
+        return fail(500, "推荐服务暂时不可用，请稍后重试")
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +164,7 @@ def qa():
 
     except Exception:
         traceback.print_exc()
-        return fail(500, f"问答服务异常: {traceback.format_exc()[-200:]}")
+        return fail(500, "问答服务暂时不可用，请稍后重试")
 
 
 # ---------------------------------------------------------------------------
@@ -187,7 +188,7 @@ def intent():
         return ok(result.to_dict())
     except Exception:
         traceback.print_exc()
-        return fail(500, f"意图识别异常: {traceback.format_exc()[-200:]}")
+        return fail(500, "意图识别服务暂时不可用，请稍后重试")
 
 
 # ---------------------------------------------------------------------------
@@ -287,7 +288,7 @@ def generate_content():
 
     except Exception:
         traceback.print_exc()
-        return fail(500, f"内容生成异常: {traceback.format_exc()[-200:]}")
+        return fail(500, "内容生成服务暂时不可用，请稍后重试")
 
 
 def _fallback_content(scene: str, pomelo_name: str) -> str:
@@ -426,9 +427,189 @@ def get_knowledge_by_id(kid):
 # 6. 健康检查
 # ---------------------------------------------------------------------------
 
+
+# ---------------------------------------------------------------------------
+# 8. 中文分词接口
+# ---------------------------------------------------------------------------
+
+@api_bp.route("/text/segment", methods=["POST"])
+@require_fields("text")
+def text_segment():
+    """
+    中文分词 + 关键词提取。
+    请求体: { "text": "沙田柚和蜜柚有什么区别" }
+    返回: { "keywords": [...], "words": [...] }
+    """
+    try:
+        from .text_utils import segment, extract_keywords
+        body = request.get_json()
+        text = body["text"].strip()
+
+        words = segment(text)
+        keywords = extract_keywords(text, topk=5)
+
+        return ok({
+            "keywords": keywords,
+            "words": words,
+        })
+    except ImportError:
+        return ok({"keywords": [], "words": [], "error": "jieba not installed"})
+    except Exception:
+        _log.exception("分词接口异常")
+        return fail(500, "分词服务暂时不可用")
+
+
 @api_bp.route("/health", methods=["GET"])
 def health():
     return ok({"status": "running", "service": "pomelo-ai-layer"})
+
+
+
+# ---------------------------------------------------------------------------
+# 7. 流式端点（SSE）
+# ---------------------------------------------------------------------------
+
+@api_bp.route("/recommend/stream", methods=["POST"])
+@require_fields("user_query")
+def recommend_stream():
+    """
+    流式推荐接口 — 通过 SSE 逐 token 返回 LLM 的推荐理由。
+    流程：意图识别 → 规则打分 → LLM 流式理由 → SSE 逐 token 推送
+    """
+    from flask import Response
+    from .sse_utils import sse_event, sse_done, sse_error
+
+    try:
+        body = request.get_json()
+        user_query = body["user_query"].strip()
+        raw_candidates = body.get("candidates", [])
+
+        intent_result = _intent_recognizer.recognize(user_query)
+        demand = UserDemand.from_intent_result(user_query, intent_result)
+
+        if raw_candidates:
+            candidates = parse_candidates_from_rows(raw_candidates)
+            scored_list = _fusion_ranker.rank(demand, candidates)
+            recommendations = [_scored_to_dict(s) for s in scored_list]
+
+            # 尝试流式生成推荐理由
+            top3 = [s.candidate for s in scored_list[:3]]
+
+            def generate():
+                # 先发意图
+                yield sse_event(json.dumps({
+                    "type": "intent",
+                    "intent": intent_result.to_dict(),
+                }, ensure_ascii=False), event="meta")
+
+                # 流式推荐理由
+                try:
+                    reason_gen = _fusion_ranker._generate_reasons_stream(demand, top3)
+                    full_reason = ""
+                    for chunk in reason_gen:
+                        full_reason += chunk
+                        yield sse_event(chunk)
+                    # 附加完整结构化数据
+                    yield sse_done({
+                        "intent": intent_result.to_dict(),
+                        "recommendations": recommendations,
+                        "count": len(recommendations),
+                        "reason": full_reason,
+                    })
+                except Exception:
+                    # 降级：直接返回完整结果
+                    yield sse_done({
+                        "intent": intent_result.to_dict(),
+                        "recommendations": recommendations,
+                        "count": len(recommendations),
+                    })
+
+            return Response(generate(), mimetype='text/event-stream',
+                          headers={
+                              'Cache-Control': 'no-cache',
+                              'X-Accel-Buffering': 'no',
+                          })
+        else:
+            # 无候选人 → LLM 自由对话
+            answer = _free_chat_recommend(user_query, intent_result)
+            resp_data = {
+                "intent": intent_result.to_dict(),
+                "recommendations": [],
+                "count": 0,
+                "answer": answer,
+            }
+            return ok(resp_data)
+
+    except Exception:
+        _log.exception("流式推荐异常")
+        return fail(500, "推荐服务暂时不可用，请稍后重试")
+
+
+@api_bp.route("/qa/stream", methods=["POST"])
+@require_fields("question")
+def qa_stream():
+    """
+    流式问答接口 — 通过 SSE 逐 token 返回 LLM 的回答。
+    """
+    from flask import Response
+    from .sse_utils import sse_event, sse_done, sse_error
+
+    try:
+        body = request.get_json()
+        question = body["question"].strip()
+        knowledge_context = body.get("knowledge_context", "")
+        session_id = body.get("session_id", "")
+
+        intent_result = _intent_recognizer.recognize(question)
+
+        # 知识库命中 → 非流式直接返回
+        if knowledge_context and len(knowledge_context.strip()) > 50:
+            answer = _format_knowledge_answer(question, knowledge_context)
+            return ok({
+                "answer": answer,
+                "source": "knowledge_base",
+                "intent": intent_result.to_dict(),
+                "session_id": session_id,
+            })
+
+        # 构建 LLM prompt
+        system_prompt = (
+            "你是梅州客家金柚领域的资深专家，精通金柚的营养、保存、辨别、食用搭配、"
+            "客家文化典故和种植工艺。请用温暖、专业、有客家味的语言回答用户问题。"
+            "如果涉及具体的金柚知识，请融入客家文化元素。回答控制在200字以内。"
+        )
+        user_prompt_parts = [f"用户问题：{question}"]
+        if knowledge_context and len(knowledge_context.strip()) > 10:
+            user_prompt_parts.append(f"相关知识参考：{knowledge_context}")
+        user_prompt_parts.append("请用专业且亲切的语言回答：")
+        user_prompt = "\n\n".join(user_prompt_parts)
+
+        def generate():
+            try:
+                for chunk in _qa_adapter.invoke_stream(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    temperature=0.65,
+                    max_tokens=512,
+                ):
+                    yield sse_event(chunk)
+                yield sse_done({
+                    "source": "llm",
+                    "intent": intent_result.to_dict(),
+                    "session_id": session_id,
+                })
+            except Exception:
+                yield sse_error("问答生成失败，请稍后重试")
+
+        return Response(generate(), mimetype='text/event-stream',
+                      headers={
+                          'Cache-Control': 'no-cache',
+                          'X-Accel-Buffering': 'no',
+                      })
+
+    except Exception:
+        _log.exception("流式问答异常")
+        return fail(500, "问答服务暂时不可用，请稍后重试")
 
 
 # ---------------------------------------------------------------------------

@@ -195,17 +195,30 @@ public class QaServiceImpl implements QaService {
     // ---- 简单关键词提取（后续可替换为 jieba 分词或调用 AI 层） ----
 
     private List<String> extractKeywords(String question) {
-        // 去掉常见停用词，按空白和标点拆分
+        // 优先调用 Flask jieba 分词接口
+        try {
+            Map<String, Object> body = Map.of("text", question);
+            Map<String, Object> result = httpUtils.callSegment(question);
+            @SuppressWarnings("unchecked")
+            List<String> keywords = (List<String>) result.getOrDefault("keywords", Collections.emptyList());
+            if (!keywords.isEmpty()) {
+                log.debug("jieba分词: {} → {}", question, keywords);
+                return keywords;
+            }
+        } catch (Exception e) {
+            log.debug("jieba分词不可用，回退到正则: {}", e.getMessage());
+        }
+
+        // 降级：原始正则分词
         String cleaned = question.replaceAll("[，。！？、；：\"'（）【】《》\\s]+", " ")
                 .replace("怎么", " ").replace("如何", " ").replace("什么", " ")
-                .replace("请问", " ").replace("一下", " ");
+                .replace("请问", " ").replace("一个", " ");
         return Arrays.stream(cleaned.split(" "))
                 .map(String::trim)
                 .filter(s -> s.length() >= 2)
                 .distinct()
                 .collect(Collectors.toList());
     }
-
     private static String truncate(String text, int maxLen) {
         if (text == null) return "";
         return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";

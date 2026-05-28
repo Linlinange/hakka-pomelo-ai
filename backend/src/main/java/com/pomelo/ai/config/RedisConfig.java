@@ -10,7 +10,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /** Redis 配置（demo 模式下不加载，由 DemoConfig 提供 mock） */
 @Configuration
-@Profile("!demo")
+@Profile("redis")
 public class RedisConfig {
 
     @Bean

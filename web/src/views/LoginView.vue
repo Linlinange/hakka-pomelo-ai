@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
@@ -10,7 +10,6 @@ const loading = ref(false)
 async function doLogin() {
   loading.value = true
   try {
-    // Web 环境无法调用 wx.login，使用模拟 code
     const code = 'web_' + Date.now()
     await user.login(code)
     router.push('/profile')
@@ -23,23 +22,50 @@ async function doLogin() {
 
 <template>
   <div class="login-page">
-    <div class="card login-card">
-      <div class="login-icon">🍊</div>
-      <h2>欢迎登录</h2>
-      <p class="desc">登录后可享受个性化推荐与浏览历史</p>
-      <button class="btn btn-gold" style="width:100%;padding:14px;font-size:16px;" @click="doLogin" :disabled="loading">
-        {{ loading ? '登录中...' : '一键登录' }}
+    <div class="login-card card">
+      <!-- Logo -->
+      <div class="login-logo">
+        <div class="mascot">
+          <div class="mascot-body"></div>
+          <div class="mascot-shadow"></div>
+        </div>
+      </div>
+
+      <h1 class="login-title">客家金柚<span class="text-gradient">AI智荐</span></h1>
+      <p class="login-desc">登录后可享受个性化推荐与浏览历史</p>
+
+      <button class="btn btn-gold btn-lg login-btn" @click="doLogin" :disabled="loading">
+        <span v-if="loading" class="loading-spinner"></span>
+        {{ loading ? '登录中...' : '🍐 一键登录' }}
       </button>
-      <p class="note">Web 演示环境使用模拟登录，小程序环境使用微信授权</p>
+
+      <p class="login-note">Web 演示环境使用模拟登录，小程序环境使用微信授权</p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.login-page { display: flex; justify-content: center; padding-top: 80px; }
-.login-card { text-align: center; max-width: 400px; width: 100%; padding: 40px 32px; }
-.login-icon { font-size: 64px; margin-bottom: 16px; }
-h2 { margin-bottom: 8px; }
-.desc { color: var(--text-placeholder); margin-bottom: 28px; font-size: 14px; }
-.note { margin-top: 16px; font-size: 12px; color: var(--text-placeholder); }
+.login-page {
+  display: flex; justify-content: center; align-items: center;
+  min-height: calc(100vh - 200px); min-height: calc(100dvh - 200px);
+}
+.login-card {
+  text-align: center; max-width: 400px; width: 100%;
+  padding: 48px 36px;
+}
+.login-logo { margin-bottom: 24px; }
+.login-title {
+  font-family: var(--font-heading); font-size: 1.8rem; font-weight: 900;
+  color: var(--text-heading); margin-bottom: 12px; letter-spacing: .04em;
+}
+.login-desc { color: var(--text-placeholder); margin-bottom: 32px; font-size: 14px; }
+.login-btn { width: 100%; padding: 16px; font-size: 16px; }
+.login-note { margin-top: 20px; font-size: 12px; color: var(--text-placeholder); line-height: 1.6; }
+
+.loading-spinner {
+  width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>

@@ -104,6 +104,15 @@ public class HttpUtils {
         return callApi("POST", "/api/intent", body, query);
     }
 
+    /**
+     * 调用 Flask POST /api/text/segment — 中文分词
+     */
+    public Map<String, Object> callSegment(String text) {
+        Map<String, Object> body = Map.of("text", text);
+        return callApi("POST", "/api/text/segment", body, text);
+    }
+
+
     // ==================== 内容生成接口 ====================
 
     /**

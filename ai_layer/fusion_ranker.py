@@ -1,4 +1,4 @@
-"""
+﻿"""
 大模型 + 规则式融合推荐排序算法（Fusion Ranker）
 核心流程：
   1. 规则式多因子打分（价格匹配 / 场景适配 / 客家特色）
@@ -511,6 +511,44 @@ Top3 金柚信息：
             raise LLMException(f"推荐理由生成失败: {result.get('error', '')}")
 
         return self._parse_reasons(result["content"], [c.id for c in top3])
+
+    
+    def _generate_reasons_stream(
+        self, demand: UserDemand, top3: list[PomeloCandidate]
+    ):
+        """流式生成 Top-3 推荐理由 — 逐 token yield"""
+        lines = []
+        for i, c in enumerate(top3):
+            lines.append(
+                f"  [{i + 1}] ID:{c.id} 《{c.name}》—{c.origin}，{c.specification}，"
+                f"{c.price_range}，{c.taste_description}。"
+                f"客家故事：{c.hakka_culture_relation[:80]}"
+            )
+
+        user_prompt = self._REASON_PROMPT.format(
+            user_query=demand.original_query,
+            intent="选购推荐" if demand.intent == "BUY" else "知识推荐",
+            pomelo_list="\n".join(lines),
+        )
+
+        try:
+            for chunk in self._adapter.invoke_stream(
+                prompt=user_prompt,
+                system_prompt="你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。",
+                temperature=0.75,
+                max_tokens=1024,
+            ):
+                yield chunk
+        except Exception:
+            # 降级：返回非流式结果
+            result = self._adapter.invoke(
+                prompt=user_prompt,
+                system_prompt="你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。",
+                temperature=0.75,
+                max_tokens=1024,
+            )
+            if result.get("success"):
+                yield result["content"]
 
     @staticmethod
     def _parse_reasons(raw: str, top_ids: list[int]) -> list[str]:

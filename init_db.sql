@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- 客家金柚特色农产品AI智荐系统 - MySQL数据库初始化脚本
 -- 版本：V1.0
 -- 说明：包含用户、金柚知识库、Prompt库、算法参数、大模型日志5张核心表
@@ -83,7 +83,15 @@ CREATE TABLE `golden_pomelo_knowledge` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='金柚知识库表';
 
 -- ============================================================
--- 3. 金柚Prompt库表（pomelo_prompt_library）
+-- 3. 金柚Prompt库表（
+
+-- FULLTEXT 索引：中文全文搜索（需要 MySQL 5.7.6+，InnoDB ngram parser）
+ALTER TABLE `golden_pomelo_knowledge`
+ADD FULLTEXT INDEX `ft_pomelo_search`
+(`pomelo_name`, `taste_description`, `hakka_culture_relation`, `cultivation_process`, `edible_pairing`)
+WITH PARSER ngram;
+
+pomelo_prompt_library）
 --    管理所有AI调用的Prompt模板，支持版本迭代与场景分类
 --    场景分类：选购推荐 / 知识问答 / 内容生成
 -- ============================================================
@@ -227,4 +235,23 @@ INSERT INTO `pomelo_prompt_library` (`prompt_name`, `scene_category`, `applicabl
 
 -- ============================================================
 -- 完成
+
+-- ============================================================
+-- 6. 会话消息表（conversation_message）
+--    存储用户对话历史，支持多轮对话恢复
+-- ============================================================
+DROP TABLE IF EXISTS `conversation_message`;
+CREATE TABLE `conversation_message` (
+    `id`                BIGINT          NOT NULL AUTO_INCREMENT  COMMENT '消息主键ID',
+    `user_id`           BIGINT          DEFAULT NULL             COMMENT '用户ID（匿名用户为NULL）',
+    `session_id`        VARCHAR(64)     NOT NULL                 COMMENT '会话ID，由前端生成',
+    `role`              VARCHAR(16)     NOT NULL                 COMMENT '角色：user / ai',
+    `msg_type`          VARCHAR(16)     DEFAULT 'text'           COMMENT '消息类型：text / recommend',
+    `content`           TEXT                                     COMMENT '消息文本内容',
+    `metadata_json`     JSON            DEFAULT NULL             COMMENT '扩展元数据（推荐结果JSON等）',
+    `create_time`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '消息创建时间',
+    PRIMARY KEY (`id`),
+    INDEX `idx_session_time` (`session_id`, `create_time`),
+    INDEX `idx_user_time` (`user_id`, `create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='会话消息表';
 -- ============================================================

@@ -1,4 +1,4 @@
-"""
+﻿"""
 大模型调用适配层（LLM Adapter）
 统一封装 ChatGLM-4 / 讯飞星火 的调用接口，提供：
 - 统一的 invoke() 请求发送 & 结果解析
@@ -117,6 +117,22 @@ class LLMAdapter(ABC):
 
     # ---- 内部工具 ----
 
+    
+    def invoke_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        """
+        流式调用入口：返回一个生成器，逐 token yield 文本块。
+        子类可选实现，默认降级为非流式（一次返回全部内容）。
+        """
+        result = self.invoke(prompt, system_prompt, temperature, max_tokens)
+        if result.get("success"):
+            yield result["content"]
+
     def _calc_backoff(self, attempt: int) -> float:
         delay = self._retry_config.base_delay_seconds * (self._retry_config.backoff_multiplier ** attempt)
         return min(delay, self._retry_config.max_delay_seconds)
@@ -162,6 +178,84 @@ class ChatGLM4Adapter(LLMAdapter):
             raise LLMNetworkException(str(e), model_name=self._model_name)
 
         return self._handle_http_status(resp)
+
+
+    def invoke_stream(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ):
+        """DeepSeek 流式调用：逐 token yield 文本块"""
+        temperature = temperature if temperature is not None else self._llm_config.temperature
+        max_tokens = max_tokens if max_tokens is not None else self._llm_config.max_tokens
+
+        try:
+            for chunk in self._send_stream(prompt, system_prompt, temperature, max_tokens):
+                yield chunk
+        except LLMException:
+            # 流式失败时降级到非流式
+            result = self.invoke(prompt, system_prompt, temperature, max_tokens)
+            if result.get("success"):
+                yield result["content"]
+
+    def _send_stream(self, prompt: str, system_prompt: Optional[str], temperature: float, max_tokens: int):
+        """逐 token 从 DeepSeek 流式 API 读取 SSE 数据"""
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt or ""},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+        headers = {
+            "Authorization": f"Bearer {self._llm_config.api_key}",
+            "Content-Type": "application/json",
+        }
+        endpoint = self._llm_config.endpoint or "https://api.deepseek.com/chat/completions"
+
+        try:
+            resp = requests.post(
+                endpoint, json=payload, headers=headers,
+                timeout=self._llm_config.timeout_seconds,
+                stream=True,
+            )
+        except requests.exceptions.Timeout:
+            raise LLMTimeoutException(model_name=self._model_name)
+        except requests.exceptions.ConnectionError as e:
+            raise LLMNetworkException(str(e), model_name=self._model_name)
+
+        if resp.status_code != 200:
+            msg = ""
+            try:
+                msg = resp.json().get("error", {}).get("message", resp.text)
+            except Exception:
+                msg = resp.text
+            if resp.status_code == 401:
+                raise LLMAuthException(msg, model_name=self._model_name)
+            if resp.status_code == 429:
+                raise LLMRateLimitException(msg, model_name=self._model_name)
+            raise LLMException(f"HTTP {resp.status_code}: {msg}", model_name=self._model_name, retryable=True)
+
+        # 逐行读取 SSE
+        for line in resp.iter_lines(decode_unicode=True):
+            if not line or not line.startswith("data: "):
+                continue
+            data_str = line[6:]
+            if data_str == "[DONE]":
+                break
+            try:
+                data = json.loads(data_str)
+                delta = data.get("choices", [{}])[0].get("delta", {})
+                content = delta.get("content", "")
+                if content:
+                    yield content
+            except json.JSONDecodeError:
+                continue
 
     def _handle_http_status(self, resp: requests.Response) -> dict:
         if resp.status_code == 200:
