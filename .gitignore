@@ -38,3 +38,6 @@ project.private.config.json
 # Uploads / temp
 *.tmp
 temp/
+
+# Codex/Agents
+.agents/
