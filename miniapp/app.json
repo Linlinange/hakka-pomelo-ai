@@ -11,7 +11,7 @@
   "window": {
     "navigationBarBackgroundColor": "#d9504a",
     "navigationBarTextStyle": "white",
-    "navigationBarTitleText": "客家金柚AI智荐",
+    "navigationBarTitleText": "AI智荐",
     "backgroundColor": "#fefcf7"
   },
   "tabBar": {

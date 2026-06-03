@@ -35,7 +35,7 @@ async function copy() {
 <template>
   <div class="content-page">
     <div class="page-header">
-      <h1 class="page-title">✍️ 金柚文案生成</h1>
+      <h1 class="page-title">✍️ 产品文案生成</h1>
       <p class="page-subtitle">AI 为你创作电商详情页、朋友圈推广文案</p>
     </div>
 
@@ -63,7 +63,7 @@ async function copy() {
     <!-- 参数配置 -->
     <div class="card" style="margin-bottom:16px;">
       <div class="form-group">
-        <label class="form-label">金柚品名</label>
+        <label class="form-label">产品品名</label>
         <input class="input" v-model="pomeloName" placeholder="如：梅县松口沙田柚" />
       </div>
       <div class="form-group">

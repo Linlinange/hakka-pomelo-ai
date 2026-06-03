@@ -14,7 +14,7 @@ Page({
     if (token) {
       this.setData({
         isLogin: true,
-        nickname: wx.getStorageSync('nickname') || '金柚爱好者',
+        nickname: wx.getStorageSync('nickname') || '水果爱好者',
         avatarUrl: wx.getStorageSync('avatarUrl') || '',
         userId: String(wx.getStorageSync('userId') || ''),
       });

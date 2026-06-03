@@ -17,7 +17,7 @@ from .flask_utils import ok, fail, bad_request, require_fields, log_request
 from .intent_recognizer import IntentRecognizer
 from .fusion_ranker import (
     FusionRanker,
-    PomeloCandidate,
+    ProductCandidate,
     UserDemand,
     ScoredCandidate,
     parse_candidates_from_rows,
@@ -208,13 +208,13 @@ def _get_content_adapter():
 
 CONTENT_PROMPTS = {
     "ecommerce": (
-        "你是梅州客家金柚的资深电商文案策划师，擅长撰写吸引人的商品详情页文案。"
-        "请用温暖、有客家文化底蕴的语言，突出金柚的产地、口感、营养价值和文化故事。"
+        "你是资深农产品电商文案策划师，擅长撰写吸引人的商品详情页文案。"
+        "请用温暖的语言，突出产品产地、口感、营养价值和文化故事。"
         "文案需包含标题、卖点分点（3-4点）和结尾引导语，控制在200字以内。"
     ),
     "social": (
-        "你是梅州客家金柚的品牌推广达人，擅长写微信朋友圈/小红书的种草推文。"
-        "请用亲切、生活化的语气，配适当emoji，突出金柚的亮点和客家文化特色。"
+        "你是农产品品牌推广达人，擅长写微信朋友圈/小红书的种草推文。"
+        "请用亲切、生活化的语气，配适当emoji，突出产品亮点。"
         "文案需有感染力，适合社交分享，控制在150字以内。"
     ),
 }
@@ -295,16 +295,16 @@ def _fallback_content(scene: str, pomelo_name: str) -> str:
     """LLM 不可用时的兜底文案"""
     if scene == "ecommerce":
         return (
-            f"【客家至味】{pomelo_name}\n\n"
-            f"产自梅州核心产区，客家传统农法种植，果肉清甜化渣、蜜香浓郁。"
-            f"中秋送礼首选，承载千年客家待客之道。\n\n"
-            f"立即选购，品味客家风情！"
+            f"【精选好物】{pomelo_name}\n\n"
+            f"源自优质产区，精心种植采摘，品质上乘。"
+            f"自用送礼皆宜，品味自然馈赠。\n\n"
+            f"立即选购！"
         )
     return (
-        f"中秋团圆时，怎能少了客家{pomelo_name}？🍊\n"
-        f"梅州直发，皮薄肉甜，一口下去满是客家人的热情与祝福～\n"
-        f"送亲友、送长辈，这份客家味道，暖胃更暖心🫶\n"
-        f"#客家金柚 #中秋送礼 #梅州特产"
+        f"分享今日份好物：{pomelo_name} 🛒\n"
+        f"产地直发，品质新鲜，每一口都是自然的味道～\n"
+        f"送亲友、送长辈，这份心意，甜到心里🫶\n"
+        f"#好物分享 #产地直供"
     )
 
 
@@ -312,12 +312,25 @@ def _fallback_content(scene: str, pomelo_name: str) -> str:
 
 def _free_chat_recommend(user_query: str, intent_result) -> str:
     """
-    无候选金柚时，直接用 LLM 进行自然语言推荐对话。
-    根据用户意图（选购/知识）调整回答风格。
+    无候选产品时，直接用 LLM 进行自然语言推荐对话。
+    根据用户意图（选购/知识）和检测到的产品类型调整回答风格。
     """
     intent_type = intent_result.intent
     constraints = intent_result.constraints or {}
     culture_tags = intent_result.culture_tags or []
+    product_type = constraints.get("product_type", "")
+
+    # 检测用户是否提到特定水果
+    fruit_keywords = {"苹果": "apple", "香蕉": "banana", "西瓜": "watermelon",
+                      "橙子": "orange", "葡萄": "grape", "草莓": "strawberry",
+                      "金柚": "pomelo", "柚子": "pomelo", "沙田柚": "pomelo", "蜜柚": "pomelo"}
+    detected_type = product_type
+    for kw, pt in fruit_keywords.items():
+        if kw in user_query:
+            detected_type = pt
+            break
+
+    is_pomelo = detected_type in ("pomelo", "") or "金柚" in user_query or "柚子" in user_query or "梅州" in user_query or "客家" in user_query
 
     # 提取约束信息
     budget = constraints.get("budget_max", "")
@@ -332,30 +345,53 @@ def _free_chat_recommend(user_query: str, intent_result) -> str:
     if recipient:
         context_parts.append(f"送礼对象：{recipient}")
     if culture_tags:
-        context_parts.append(f"客家文化偏好：{', '.join(culture_tags)}")
+        context_parts.append(f"文化偏好：{', '.join(culture_tags)}")
     context_str = "，".join(context_parts) if context_parts else "无特殊约束"
 
-    if intent_type == "BUY":
-        system_prompt = (
-            "你是梅州客家金柚的专业导购顾问，精通各产区金柚的特色与客家文化。\n"
-            "你的任务是理解用户的选购需求，给出专业、温暖、有客家味的推荐建议。\n"
-            "你可以推荐具体的金柚品类（如沙田柚、蜜柚）、产地（梅县松口、大埔、蕉岭等）、"
-            "以及适合的规格和价位。回答要具体、实用，融入客家文化元素。\n"
-            "控制在200字以内，语气温暖亲切。"
-        )
-        user_prompt = (
-            f"用户需求：{user_query}\n"
-            f"已识别的约束条件：{context_str}\n\n"
-            "请根据用户需求，推荐合适的客家金柚品类和选购建议。"
-            "可以提到具体的产地特色（梅县松口、大埔、蕉岭、五华、平远、丰顺等梅州产区）、"
-            "规格选择和价格参考。请直接给出推荐，不要反问用户。"
-        )
+    if is_pomelo:
+        # 金柚专属风格
+        if intent_type == "BUY":
+            system_prompt = (
+                "你是梅州客家金柚的专业导购顾问，精通各产区金柚的特色与客家文化。\n"
+                "你的任务是理解用户的选购需求，给出专业、温暖、有客家味的推荐建议。\n"
+                "你可以推荐具体的金柚品类（如沙田柚、蜜柚）、产地（梅县松口、大埔、蕉岭等）、"
+                "以及适合的规格和价位。回答要具体、实用，融入客家文化元素。\n"
+                "控制在200字以内，语气温暖亲切。"
+            )
+            user_prompt = (
+                f"用户需求：{user_query}\n"
+                f"已识别的约束条件：{context_str}\n\n"
+                "请根据用户需求，推荐合适的客家金柚品类和选购建议。"
+                "可以提到具体的产地特色（梅县松口、大埔、蕉岭、五华、平远、丰顺等梅州产区）、"
+                "规格选择和价格参考。请直接给出推荐，不要反问用户。"
+            )
+        else:
+            system_prompt = (
+                "你是梅州客家金柚领域的资深专家，精通金柚的营养、保存、辨别、食用搭配和客家文化。\n"
+                "请用专业、温暖、有客家味的语言回答用户问题。控制在200字以内。"
+            )
+            user_prompt = f"用户问题：{user_query}\n\n请直接回答，融入客家文化特色。"
     else:
-        system_prompt = (
-            "你是梅州客家金柚领域的资深专家，精通金柚的营养、保存、辨别、食用搭配和客家文化。\n"
-            "请用专业、温暖、有客家味的语言回答用户问题。控制在200字以内。"
-        )
-        user_prompt = f"用户问题：{user_query}\n\n请直接回答，融入客家文化特色。"
+        # 通用水果风格
+        if intent_type == "BUY":
+            system_prompt = (
+                "你是农产品推荐专家，精通各类水果的产地特色、品质鉴别和选购技巧。\n"
+                "你的任务是理解用户的选购需求，给出专业、实用的推荐建议。\n"
+                "你可以推荐具体的品种、产地以及适合的规格和价位。回答要具体、实用。\n"
+                "控制在200字以内，语气温暖亲切。"
+            )
+            user_prompt = (
+                f"用户需求：{user_query}\n"
+                f"已识别的约束条件：{context_str}\n\n"
+                "请根据用户需求，推荐合适的水果品类和选购建议。"
+                "可以提到具体的产地特色、品种选择和价格参考。请直接给出推荐，不要反问用户。"
+            )
+        else:
+            system_prompt = (
+                "你是农产品领域的资深专家，精通各类水果的营养、保存、辨别和食用搭配。\n"
+                "请用专业、温暖的语言回答用户问题。控制在200字以内。"
+            )
+            user_prompt = f"用户问题：{user_query}\n\n请直接用中文回答。注意：知识库涉及金柚时标明是梅州特产即可。"
 
     adapter = _get_content_adapter()
     result = adapter.invoke(
@@ -368,16 +404,10 @@ def _free_chat_recommend(user_query: str, intent_result) -> str:
     if result.get("success") and result.get("content"):
         return result["content"].strip()
 
-    # LLM 调用失败时的兜底 — 根据意图给出不同引导
-    if intent_type == "BUY":
-        return (
-            f"抱歉，AI 暂时无法为您精准推荐「{user_query[:20]}」。\n\n"
-            "梅州客家金柚品类丰富：沙田柚清甜化渣适合送礼，蜜柚酸甜可口适合自用，"
-            "富硒柚适合孝敬长辈。您可以补充预算、送礼对象等信息，我帮您更精准地挑选～"
-        )
+    # LLM 调用失败时的兜底
     return (
-        f"关于「{user_query[:20]}」，建议您查阅梅州客家金柚相关资料。\n"
-        "也可以试试问我：金柚怎么保存？沙田柚和蜜柚有什么区别？金柚有什么营养价值？"
+        f"抱歉，AI 暂时无法为您解答「{user_query[:20]}」。\n\n"
+        "请换个方式提问，我会尽力为您解答。"
     )
 
 
@@ -386,19 +416,23 @@ def _free_chat_recommend(user_query: str, intent_result) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _load_knowledge_from_db():
-    """从 MySQL 加载金柚知识库，失败返回空列表"""
+def _load_knowledge_from_db(product_type: str = None):
+    """从 MySQL 加载知识库，可选按 product_type 筛选，失败返回空列表"""
     try:
         from .db import query_all
-        rows = query_all(
-            "SELECT id, pomelo_name, category, origin, specification, "
-            "price_range, taste_description, hakka_culture_relation, "
+        sql = (
+            "SELECT id, product_type, pomelo_name, category, origin, specification, "
+            "price_range, taste_description, hakka_culture_relation, product_description, "
             "gift_scene_tags, tags, image_url, "
-            "score_requirement_match, score_scene_fit, score_hakka_feature "
-            "FROM golden_pomelo_knowledge WHERE status=1 AND is_deleted=0 "
-            "ORDER BY view_count DESC LIMIT 20",
-            connect_timeout=3,
+            "score_requirement_match, score_scene_fit, score_hakka_feature, score_product_feature "
+            "FROM golden_pomelo_knowledge WHERE status=1 AND is_deleted=0"
         )
+        params = None
+        if product_type:
+            sql += " AND product_type = %s"
+            params = (product_type,)
+        sql += " ORDER BY view_count DESC LIMIT 20"
+        rows = query_all(sql, params, connect_timeout=3)
         if rows:
             _log.info("从MySQL加载知识库: %d条", len(rows))
             return rows
@@ -409,8 +443,9 @@ def _load_knowledge_from_db():
 
 @api_bp.route("/knowledge", methods=["GET"])
 def get_knowledge():
-    """获取金柚知识库列表（只读，DB/静态数据自动切换）"""
-    return ok(_load_knowledge_from_db())
+    """获取知识库列表，支持可选参数 ?product_type=apple 筛选"""
+    pt = request.args.get("product_type")
+    return ok(_load_knowledge_from_db(product_type=pt))
 
 
 @api_bp.route("/knowledge/<int:kid>", methods=["GET"])
@@ -572,12 +607,8 @@ def qa_stream():
                 "session_id": session_id,
             })
 
-        # 构建 LLM prompt
-        system_prompt = (
-            "你是梅州客家金柚领域的资深专家，精通金柚的营养、保存、辨别、食用搭配、"
-            "客家文化典故和种植工艺。请用温暖、专业、有客家味的语言回答用户问题。"
-            "如果涉及具体的金柚知识，请融入客家文化元素。回答控制在200字以内。"
-        )
+        # 构建 LLM prompt（动态检测产品类型）
+        system_prompt = _build_qa_system_prompt(question)
         user_prompt_parts = [f"用户问题：{question}"]
         if knowledge_context and len(knowledge_context.strip()) > 10:
             user_prompt_parts.append(f"相关知识参考：{knowledge_context}")
@@ -622,6 +653,7 @@ def _scored_to_dict(s: ScoredCandidate) -> dict:
     c = s.candidate
     return {
         "id": c.id,
+        "product_type": c.product_type,
         "pomelo_name": c.name,
         "category": c.category,
         "origin": c.origin,
@@ -630,13 +662,15 @@ def _scored_to_dict(s: ScoredCandidate) -> dict:
         "price_range": c.price_range,
         "taste_description": c.taste_description,
         "hakka_culture_relation": c.hakka_culture_relation,
+        "product_description": c.product_description,
         "gift_scene_tags": c.gift_scene_tags,
         "tags": c.tags,
         "image_url": getattr(c, "image_url", ""),
         # 打分明细
         "score_price_match": round(s.score_price_match, 2),
         "score_scene_fit": round(s.score_scene_fit, 2),
-        "score_hakka_feature": round(s.score_hakka_feature, 2),
+        "score_hakka_feature": round(s.score_third_dimension, 2),    # 兼容旧字段名
+        "score_product_feature": round(s.score_third_dimension, 2),  # 新字段名
         "rule_total": round(s.rule_total, 2),
         "llm_score": round(s.llm_score, 1),
         "final_score": round(s.final_score, 1),
@@ -647,22 +681,48 @@ def _scored_to_dict(s: ScoredCandidate) -> dict:
 def _format_knowledge_answer(question: str, context: str) -> str:
     """将知识库检索结果格式化为自然语言回答"""
     return (
-        f"根据客家金柚知识库，关于「{question}」的相关信息如下：\n\n"
+        f"关于「{question}」的相关信息如下：\n\n"
         f"{context}\n\n"
         f"如需更多帮助，请进一步描述您的问题。"
     )
 
 
+def _detect_product_type(text: str) -> str:
+    """从文本中检测提到的产品类型"""
+    fruit_map = {
+        "苹果": "apple", "香蕉": "banana", "西瓜": "watermelon",
+        "橙子": "orange", "葡萄": "grape", "草莓": "strawberry",
+        "金柚": "pomelo", "柚子": "pomelo", "沙田柚": "pomelo", "蜜柚": "pomelo",
+        "梅州": "pomelo", "客家": "pomelo",
+    }
+    for kw, pt in fruit_map.items():
+        if kw in text:
+            return pt
+    return "pomelo"  # 默认金柚
+
+
+def _build_qa_system_prompt(question: str) -> str:
+    """根据问题内容动态构建 QA system prompt"""
+    pt = _detect_product_type(question)
+    if pt == "pomelo":
+        return (
+            "你是梅州客家金柚领域的资深专家，精通金柚的营养、保存、辨别、食用搭配、"
+            "客家文化典故和种植工艺。请用温暖、专业、有客家味的语言回答用户问题。"
+            "如果涉及具体的金柚知识，请融入客家文化元素。回答控制在200字以内。"
+        )
+    else:
+        return (
+            "你是农产品领域的资深专家，精通各类水果的营养、保存、辨别、食用搭配常识。"
+            "请用温暖、专业的语言回答用户问题。回答控制在200字以内。"
+        )
+
+
 def _call_llm_for_qa(question: str, knowledge_context: str, intent_result) -> str:
     """
     调用大模型生成问答答案。
-    传入知识库上下文作为参考，让 LLM 结合金柚专业知识作答。
+    传入知识库上下文作为参考，让 LLM 结合专业知识作答。
     """
-    system_prompt = (
-        "你是梅州客家金柚领域的资深专家，精通金柚的营养、保存、辨别、食用搭配、"
-        "客家文化典故和种植工艺。请用温暖、专业、有客家味的语言回答用户问题。"
-        "如果涉及具体的金柚知识，请融入客家文化元素。回答控制在200字以内。"
-    )
+    system_prompt = _build_qa_system_prompt(question)
 
     # 构建用户 prompt
     user_prompt_parts = [f"用户问题：{question}"]
@@ -685,6 +745,6 @@ def _call_llm_for_qa(question: str, knowledge_context: str, intent_result) -> st
     if knowledge_context and len(knowledge_context.strip()) > 10:
         return _format_knowledge_answer(question, knowledge_context)
     return (
-        f"关于「{question}」，建议您查阅梅州客家金柚相关资料，"
+        f"关于「{question}」，建议您查阅相关资料，"
         f"或换个方式提问，我会尽力为您解答。"
     )

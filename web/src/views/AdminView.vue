@@ -26,13 +26,13 @@ onMounted(load)
 function openAdd() {
   if (tab.value === 'knowledge') {
     editItem.value = {
-      pomeloName: '', category: '', origin: '', specification: '',
+      productType: 'pomelo', pomeloName: '', category: '', origin: '', specification: '',
       weightRange: '', priceRange: '', seasonInfo: '',
       tasteDescription: '', cultivationProcess: '',
-      hakkaCultureRelation: '', identificationTips: '',
+      hakkaCultureRelation: '', productDescription: '', identificationTips: '',
       preservationMethod: '', ediblePairing: '', nutritionalValue: '',
       giftSceneTags: '', tags: '', imageUrl: '',
-      scoreRequirementMatch: 5, scoreSceneFit: 5, scoreHakkaFeature: 5,
+      scoreRequirementMatch: 5, scoreSceneFit: 5, scoreHakkaFeature: 5, scoreProductFeature: 5,
     }
   } else {
     editItem.value = {
@@ -126,14 +126,34 @@ async function updateParam(id, value) {
           <!-- 知识库表单 -->
           <div v-if="tab === 'knowledge'" class="modal-form">
             <div class="form-row">
+              <div class="form-col"><label>产品类型*</label>
+                <select class="input" v-model="editItem.productType">
+                  <option value="pomelo">金柚</option>
+                  <option value="apple">苹果</option>
+                  <option value="banana">香蕉</option>
+                  <option value="watermelon">西瓜</option>
+                  <option value="orange">橙子</option>
+                  <option value="grape">葡萄</option>
+                </select>
+              </div>
               <div class="form-col"><label>品名*</label><input class="input" v-model="editItem.pomeloName" /></div>
+            </div>
+            <div class="form-row">
               <div class="form-col"><label>品类</label>
                 <select class="input" v-model="editItem.category">
                   <option value="">选择品类</option>
-                  <option value="沙田柚">沙田柚</option>
-                  <option value="蜜柚">蜜柚</option>
-                  <option value="文旦柚">文旦柚</option>
-                  <option value="金柚深加工品">金柚深加工品</option>
+                  <template v-if="editItem.productType === 'pomelo'">
+                    <option value="沙田柚">沙田柚</option>
+                    <option value="蜜柚">蜜柚</option>
+                    <option value="文旦柚">文旦柚</option>
+                    <option value="金柚深加工品">金柚深加工品</option>
+                  </template>
+                  <template v-else>
+                    <option value="优选">优选</option>
+                    <option value="精品">精品</option>
+                    <option value="有机">有机</option>
+                    <option value="其他">其他</option>
+                  </template>
                 </select>
               </div>
             </div>
@@ -153,8 +173,10 @@ async function updateParam(id, value) {
             <textarea class="textarea" v-model="editItem.tasteDescription" placeholder="如：清甜化渣、蜜香浓郁" rows="2" />
             <label>种植工艺</label>
             <textarea class="textarea" v-model="editItem.cultivationProcess" placeholder="有机种植、客家传统农法" rows="2" />
-            <label>客家文化关联</label>
+            <label>客家文化关联（仅金柚）</label>
             <textarea class="textarea" v-model="editItem.hakkaCultureRelation" placeholder="如：金柚与客家民俗、节庆、待客礼仪的关联" rows="2" />
+            <label>产品特色描述（非金柚使用）</label>
+            <textarea class="textarea" v-model="editItem.productDescription" placeholder="产品通用描述/特色说明" rows="2" />
             <label>辨别技巧</label>
             <textarea class="textarea" v-model="editItem.identificationTips" rows="2" />
             <label>保存方法</label>
@@ -171,6 +193,7 @@ async function updateParam(id, value) {
               <div class="form-col"><label>需求匹配分</label><input class="input" type="number" step="0.1" min="0" max="10" v-model="editItem.scoreRequirementMatch" /></div>
               <div class="form-col"><label>场景适配分</label><input class="input" type="number" step="0.1" min="0" max="10" v-model="editItem.scoreSceneFit" /></div>
               <div class="form-col"><label>客家特色分</label><input class="input" type="number" step="0.1" min="0" max="10" v-model="editItem.scoreHakkaFeature" /></div>
+              <div class="form-col"><label>产品特色分</label><input class="input" type="number" step="0.1" min="0" max="10" v-model="editItem.scoreProductFeature" /></div>
             </div>
           </div>
 

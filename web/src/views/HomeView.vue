@@ -9,10 +9,10 @@ const knowledge = ref([])
 const loading = ref(true)
 
 const hotQueries = [
-  { q: '200元中秋送礼推荐什么金柚？',  label: '中秋送礼推荐',  icon: '🎵', color: '#e8684a' },
-  { q: '适合老人吃的金柚有哪些？',      label: '适合老人的金柚', icon: '👘', color: '#c4a265' },
-  { q: '沙田柚和蜜柚有什么区别？',      label: '沙田柚 vs 蜜柚', icon: '🍐', color: '#788c5d' },
-  { q: '推荐团圆饭搭配的金柚',          label: '团圆饭搭配',    icon: '🍽️', color: '#d9504a' },
+  { q: '200元送礼推荐什么水果？',  label: '送礼推荐',  icon: '🎵', color: '#e8684a' },
+  { q: '适合老人吃的水果有哪些？',  label: '适合老人', icon: '👘', color: '#c4a265' },
+  { q: '沙田柚和蜜柚有什么区别？',  label: '沙田柚 vs 蜜柚', icon: '🍐', color: '#788c5d' },
+  { q: '夏天有什么消暑水果推荐？',  label: '夏季消暑',  icon: '🍽️', color: '#d9504a' },
 ]
 
 onMounted(async () => {
@@ -38,14 +38,14 @@ function goChat(q) {
         <span class="hero-badge-sub">AI 驱动 · 精准选柚</span>
       </div>
       <h1 class="hero-title">
-        每一颗金柚，<br/>都值得被<span class="hero-hl">认真推荐</span>
+        每一颗好水果，<br/>都值得被<span class="hero-hl">认真推荐</span>
       </h1>
       <p class="hero-desc">
-        来自梅州山水间的客家金柚，AI 读懂你的需求，为你找到最合适的那一颗
+        来自全国优质产区的精选水果，AI 读懂你的需求，为你找到最合适的那一款
       </p>
       <div class="hero-actions">
         <button class="btn btn-primary btn-lg pulse-cta" @click="goChat('')">
-          🤖 开始选柚
+          🤖 开始选购
         </button>
         <button class="btn btn-outline btn-lg" @click="router.push('/content')">
           ✍️ 生成文案
@@ -74,11 +74,11 @@ function goChat(q) {
       </div>
     </section>
 
-    <!-- 金柚精选 -->
+    <!-- 精选推荐 -->
     <section class="section">
       <div class="section-head">
-        <h2 class="section-title">🍐 金柚精选</h2>
-        <span class="section-sub">客家山水，自然好柚</span>
+        <h2 class="section-title">🍐 精选推荐</h2>
+        <span class="section-sub">产地直供，品质保证</span>
       </div>
 
       <div v-if="loading" class="skeleton-grid">
@@ -92,7 +92,7 @@ function goChat(q) {
 
       <div v-if="!loading && knowledge.length === 0" class="empty-state">
         <span class="empty-icon">🍐</span>
-        <p>金柚知识库加载中...</p>
+        <p>产品知识库加载中...</p>
         <p class="empty-hint">请确认后端服务已启动</p>
       </div>
     </section>

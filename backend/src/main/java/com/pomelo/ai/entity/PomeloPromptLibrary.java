@@ -14,6 +14,7 @@ public class PomeloPromptLibrary {
     private Long id;
     private String promptName;
     private String sceneCategory;   // BUY / QA / GEN
+    private String productType;     // V2.0: 适用产品类型
     private String applicableScene;
     private String promptTemplate;
     private String variablesSchema;

@@ -133,8 +133,9 @@ public class RecommendServiceImpl implements RecommendService {
     // ---- 解析 Flask AI 层返回的推荐列表 ----
 
     @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
     private List<PomeloRecommendItem> parseRecommendItems(Map<String, Object> aiData) {
-        // Flask 返回: data.recommendations = [ {pomelo_name, final_score, reason, ...}, ... ]
+        // Flask 返回: data.recommendations = [ {pomelo_name, product_type, final_score, reason, ...}, ... ]
         List<Map<String, Object>> rawItems = (List<Map<String, Object>>)
                 aiData.getOrDefault("recommendations", Collections.emptyList());
         List<PomeloRecommendItem> items = new ArrayList<>();
@@ -142,6 +143,7 @@ public class RecommendServiceImpl implements RecommendService {
             try {
                 items.add(PomeloRecommendItem.builder()
                         .id(toLong(item.get("id")))
+                        .productType(String.valueOf(item.getOrDefault("product_type", "pomelo")))
                         .pomeloName(String.valueOf(item.getOrDefault("pomelo_name", "")))
                         .category(String.valueOf(item.getOrDefault("category", "")))
                         .origin(String.valueOf(item.getOrDefault("origin", "")))
@@ -149,12 +151,14 @@ public class RecommendServiceImpl implements RecommendService {
                         .priceRange(String.valueOf(item.getOrDefault("price_range", "")))
                         .tasteDescription(String.valueOf(item.getOrDefault("taste_description", "")))
                         .hakkaCultureRelation(String.valueOf(item.getOrDefault("hakka_culture_relation", "")))
+                        .productDescription(String.valueOf(item.getOrDefault("product_description", "")))
                         .imageUrl(String.valueOf(item.getOrDefault("image_url", "")))
                         .giftSceneTags(String.valueOf(item.getOrDefault("gift_scene_tags", "")))
                         .tags(String.valueOf(item.getOrDefault("tags", "")))
                         .scorePriceMatch(toBigDecimal(item.get("score_price_match")))
                         .scoreSceneFit(toBigDecimal(item.get("score_scene_fit")))
                         .scoreHakkaFeature(toBigDecimal(item.get("score_hakka_feature")))
+                        .scoreProductFeature(toBigDecimal(item.get("score_product_feature")))
                         .ruleTotal(toBigDecimal(item.get("rule_total")))
                         .llmScore(toBigDecimal(item.get("llm_score")))
                         .finalScore(toBigDecimal(item.get("final_score")))

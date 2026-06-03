@@ -1,12 +1,13 @@
 /**
- * 金柚卡片组件
+ * 产品卡片组件
  *
  * 接收属性：
  *   item: {
  *     id, pomeloName, origin, priceRange, tasteDescription,
- *     hakkaCultureRelation, imageUrl, giftSceneTags, tags,
+ *     hakkaCultureRelation, productDescription, imageUrl, giftSceneTags, tags,
  *     finalScore, ruleTotal, llmScore, reason,
- *     scorePriceMatch, scoreSceneFit, scoreHakkaFeature
+ *     scorePriceMatch, scoreSceneFit, scoreHakkaFeature, scoreProductFeature,
+ *     productType
  *   }
  */
 
@@ -36,6 +37,7 @@ Component({
     displayReason: '',
     displayImage: '',
     displayTags: [],
+    displayProductType: '',
     scoreStars: [0, 0, 0, 0, 0], // 5 星制
   },
 
@@ -53,14 +55,17 @@ Component({
       const tagStr = [item.giftSceneTags || item.gift_scene_tags, item.tags].filter(Boolean).join(',');
       const tags = tagStr ? tagStr.split(/[,，]/).map(t => t.trim()).filter(Boolean).slice(0, 4) : [];
 
+      const productType = item.productType || item.product_type || 'pomelo';
+
       this.setData({
-        displayName: item.pomeloName || item.pomelo_name || item.name || '梅州金柚',
-        displayOrigin: item.origin || '梅州',
+        displayName: item.pomeloName || item.pomelo_name || item.name || '精选水果',
+        displayOrigin: item.origin || '',
         displayPrice: item.priceRange || item.price_range || '',
         displayScore: score,
         displayReason: item.reason || '',
         displayImage: item.imageUrl || item.image_url || '/images/default_pomelo.png',
         displayTags: tags,
+        displayProductType: productType,
         scoreStars: stars,
       });
     },

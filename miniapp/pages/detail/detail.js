@@ -36,6 +36,7 @@ Page({
     const e = this.data.entity;
     if (e && e.pomeloName) {
       wx.setStorageSync('quick_query', '帮我介绍一下' + e.pomeloName);
+      wx.setStorageSync('quick_query_mode', 'qa');
       wx.switchTab({ url: '/pages/recommend/recommend' });
     }
   },

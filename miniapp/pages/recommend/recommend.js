@@ -13,9 +13,9 @@ const { recommend, qa, saveMessage, getHistory, getSessions, deleteSession } = r
 
 const MAX_INPUT_LENGTH = 500;
 
-const SYSTEM_HINT = '我是客家金柚AI导购，你可以：\n• 输入选购需求，如"200元中秋送礼推荐"\n• 输入知识问题，如"金柚怎么保存"\n• 点击下方[选购推荐]/[知识问答]切换模式';
+const SYSTEM_HINT = '我是AI导购，你可以：\n• 输入选购需求，如"200元中秋送礼推荐"\n• 输入知识问题，如"柚子怎么保存"\n• 点击下方[选购推荐]/[知识问答]切换模式';
 
-const QA_HINT = '我是客家金柚知识专家，你可以问我：\n• "金柚皮怎么制作客家菜？"\n• "沙田柚和蜜柚有什么区别？"\n• "金柚有什么营养价值？"';
+const QA_HINT = '我是农产品知识专家，你可以问我：\n• "沙田柚和蜜柚有什么区别？"\n• "苹果怎么保存更新鲜？"\n• "西瓜有什么营养价值？"';
 
 const MODE_HINTS = { recommend: SYSTEM_HINT, qa: QA_HINT };
 
@@ -215,7 +215,7 @@ Page({
   _handleRecommendResponse(res) {
     const recs = res.recommendations || [];
     if (recs.length === 0) {
-      this._addMessage('ai', 'text', '暂时没有找到符合您需求的金柚，试试换个方式描述吧～');
+      this._addMessage('ai', 'text', '暂时没有找到符合您需求的产品，试试换个方式描述吧～');
       return;
     }
     const intentObj = res.intent || {};
@@ -249,8 +249,8 @@ Page({
 
   _buildSummary(intentType, count) {
     return intentType === 'BUY'
-      ? `为您精选了 ${count} 款客家金柚，请看看合不合心意：`
-      : `根据您的问题，为您找到 ${count} 款相关金柚：`;
+      ? `为您精选了 ${count} 款产品，请看看合不合心意：`
+      : `根据您的问题，为您找到 ${count} 款相关产品：`;
   },
 
   _genSessionId() {

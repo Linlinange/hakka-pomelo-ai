@@ -2,6 +2,7 @@
 中文文本处理工具模块
 基于 jieba 分词 + TF-IDF 进行关键词提取和分词
 """
+from __future__ import annotations
 
 import logging
 import jieba

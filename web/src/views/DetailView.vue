@@ -21,16 +21,19 @@ onMounted(async () => {
   loading.value = false
 })
 
+const productType = () => field('productType') || 'pomelo'
+const isPomelo = () => productType() === 'pomelo'
+
 function askAbout() {
   if (entity.value) {
-    localStorage.setItem('quick_query', '帮我介绍一下' + (entity.value.pomeloName || '这款金柚'))
+    localStorage.setItem('quick_query', '帮我介绍一下' + (entity.value.pomeloName || field('pomeloName')))
     localStorage.setItem('quick_query_mode', 'qa')
     router.push('/chat')
   }
 }
 
 function goChat() {
-  localStorage.setItem('quick_query', '推荐类似' + (entity.value?.pomeloName || '金柚'))
+  localStorage.setItem('quick_query', '推荐类似' + (entity.value?.pomeloName || '产品'))
   router.push('/chat')
 }
 </script>
@@ -44,7 +47,7 @@ function goChat() {
 
   <div v-else-if="!entity" class="empty">
     <span class="empty-icon">🍐</span>
-    <p>金柚信息不存在</p>
+    <p>产品信息不存在</p>
   </div>
 
   <div v-else class="detail anim-fade-up">
@@ -96,13 +99,20 @@ function goChat() {
           <div class="mini-score-ring hakka" :style="{ '--pct': (field('scoreHakkaFeature') || 0) * 10 + '%' }">
             <span>{{ (field('scoreHakkaFeature') || 0).toFixed(1) }}</span>
           </div>
-          <span class="mini-label">客家特色</span>
+          <span class="mini-label">{{ isPomelo() ? '客家特色' : '产品特色' }}</span>
+        </div>
+        <!-- 非pomelo显示 product_feature -->
+        <div class="mini-score" v-if="!isPomelo() && field('scoreProductFeature')">
+          <div class="mini-score-ring" :style="{ '--pct': (field('scoreProductFeature') || 0) * 10 + '%' }">
+            <span>{{ (field('scoreProductFeature') || 0).toFixed(1) }}</span>
+          </div>
+          <span class="mini-label">综合特色</span>
         </div>
       </div>
 
       <!-- 操作按钮 -->
       <div class="hero-actions">
-        <button class="btn btn-primary" @click="goChat">🤖 推荐类似金柚</button>
+        <button class="btn btn-primary" @click="goChat">🤖 推荐类似产品</button>
         <button class="btn btn-outline" @click="askAbout">📖 向AI了解更多</button>
       </div>
     </div>
@@ -118,7 +128,12 @@ function goChat() {
       <p>{{ field('cultivationProcess') }}</p>
     </div>
 
-    <div class="card section-card" v-if="field('hakkaCultureRelation')">
+    <div class="card section-card" v-if="field('productDescription') && !isPomelo()">
+      <h3>📖 产品特色</h3>
+      <p>{{ field('productDescription') }}</p>
+    </div>
+
+    <div class="card section-card" v-if="field('hakkaCultureRelation') && isPomelo()">
       <h3>🏯 客家文化</h3>
       <p>{{ field('hakkaCultureRelation') }}</p>
     </div>

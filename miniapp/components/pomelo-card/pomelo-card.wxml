@@ -1,4 +1,4 @@
-<!-- 金柚卡片组件 -->
+<!-- 产品卡片组件 -->
 <view class="pomelo-card" bindtap="onTapCard">
 
   <!-- 头部：图片 + 名称 -->

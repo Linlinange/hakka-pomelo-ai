@@ -11,7 +11,7 @@ import time
 import logging
 import threading
 from abc import ABC, abstractmethod
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 
 import requests
 
@@ -50,7 +50,7 @@ class LLMAdapter(ABC):
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """
         统一调用入口：发送请求 → 解析结果 → 返回标准化字典。
 

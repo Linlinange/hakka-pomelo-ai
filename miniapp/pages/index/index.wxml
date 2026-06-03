@@ -3,8 +3,8 @@
   <!-- Logo 区 -->
   <view class="hero">
     <image class="hero-logo" src="/images/logo.png" mode="aspectFit" />
-    <text class="hero-title">客家金柚AI智荐</text>
-    <text class="hero-desc">AI 驱动 · 精准选柚 · 客家文化传承</text>
+    <text class="hero-title">AI 智荐</text>
+    <text class="hero-desc">AI 驱动 · 精准推荐 · 品质生活</text>
   </view>
 
   <!-- 功能入口 -->
@@ -12,12 +12,12 @@
     <view class="card" bindtap="goRecommend">
       <text class="card-icon">🤖</text>
       <text class="card-title">AI 智荐</text>
-      <text class="card-desc">告诉我你的需求，AI 帮你精准推荐金柚</text>
+      <text class="card-desc">告诉我你的需求，AI 帮你精准推荐水果</text>
     </view>
     <view class="card" bindtap="goContent">
       <text class="card-icon">✍️</text>
       <text class="card-title">文案生成</text>
-      <text class="card-desc">一键生成金柚电商文案与朋友圈推文</text>
+      <text class="card-desc">一键生成产品电商文案与朋友圈推文</text>
     </view>
   </view>
 
@@ -25,10 +25,10 @@
   <view class="section">
     <text class="section-title">🔥 热门提问</text>
     <view class="quick-list">
-      <view class="quick-item" bindtap="onQuickAsk" data-q="200元中秋送礼推荐什么金柚？">🎁 中秋送礼推荐</view>
-      <view class="quick-item" bindtap="onQuickAsk" data-q="适合老人吃的金柚有哪些？">👴 适合老人的金柚</view>
-      <view class="quick-item" bindtap="onQuickAsk" data-q="梅州沙田柚和蜜柚有什么区别？">🍊 沙田柚 vs 蜜柚</view>
-      <view class="quick-item" bindtap="onQuickAsk" data-q="帮我推荐团圆饭搭配的金柚">🍽️ 团圆饭金柚搭配</view>
+      <view class="quick-item" bindtap="onQuickAsk" data-q="200元送礼推荐什么水果？">🎁 送礼推荐</view>
+      <view class="quick-item" bindtap="onQuickAsk" data-q="适合老人吃的水果有哪些？">👴 适合老人的水果</view>
+      <view class="quick-item" bindtap="onQuickAsk" data-q="沙田柚和蜜柚有什么区别？">🍊 沙田柚 vs 蜜柚</view>
+      <view class="quick-item" bindtap="onQuickAsk" data-q="夏天有什么消暑水果推荐？">🍉 夏季消暑</view>
     </view>
   </view>
 

@@ -9,7 +9,7 @@
   <!-- 输入区 -->
   <view class="form">
     <view class="form-item">
-      <text class="label">金柚品名</text>
+      <text class="label">产品品名</text>
       <input class="input" value="{{pomeloName}}" bindinput="onInput" data-field="pomeloName" placeholder="如：梅县松口沙田柚" />
     </view>
     <view class="form-item">

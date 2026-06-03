@@ -8,7 +8,7 @@ import json
 import re
 import logging
 import time
-from typing import Optional, Any
+from typing import Optional, Any, Dict, List
 
 from .config import get_config
 from .llm_adapter import LLMAdapter, create_adapter
@@ -24,13 +24,13 @@ DEFAULT_INTENT_SYSTEM_PROMPT = """\
 你是一个意图分类器。只输出JSON，不要解释。
 
 规则：
-- BUY：用户想买金柚、求推荐、送礼、有预算（含买/购/送/推荐/预算/哪个好）
+- BUY：用户想买/选/求推荐/送礼/有预算（含买/购/送/推荐/预算/哪个好）
 - QA：纯知识问题（含怎么保存/营养/做法/区别/历史/怎么吃/种植）
 
 按此JSON格式输出（null表示无此信息）：
-{"intent":"BUY","confidence":0.92,"constraints":{"budget_min":null,"budget_max":null,"recipient":null,"scene":null,"spec_preference":null,"quantity":null},"culture_tags":[],"keywords":[]}
+{"intent":"BUY","confidence":0.92,"constraints":{"budget_min":null,"budget_max":null,"recipient":null,"scene":null,"spec_preference":null,"quantity":null,"product_type":null},"culture_tags":[],"keywords":[]}
 
-字段说明：budget_max=价格数字, recipient=送礼对象, scene=场景, culture_tags=客家文化标签, keywords=3-5个核心词"""
+字段说明：budget_max=价格数字, recipient=送礼对象, scene=场景, product_type=用户提到的产品类型（如"苹果""香蕉""金柚"）, culture_tags=文化标签, keywords=3-5个核心词"""
 
 DEFAULT_INTENT_USER_PROMPT_TEMPLATE = """输入：{{user_input}}
 
@@ -49,35 +49,55 @@ class PromptLoader:
         self._cache_time: float = 0
         self._cache_ttl: float = 300  # 5 分钟
 
-    def load_intent_prompt(self, scene_category: str = "INTENT") -> dict:
+    def load_intent_prompt(self, scene_category: str = "INTENT", product_type: str = "pomelo") -> dict:
         """
         返回意图识别 Prompt 模板 dict：
         { "system_role_desc": str, "prompt_template": str, "variables_schema": dict, "version": str }
+        支持按 product_type 加载专属模板。
         """
+        cache_key = f"{scene_category}:{product_type}"
         # 先查缓存
-        if scene_category in self._cache and (time.time() - self._cache_time) < self._cache_ttl:
-            return self._cache[scene_category]
+        if cache_key in self._cache and (time.time() - self._cache_time) < self._cache_ttl:
+            return self._cache[cache_key]
 
-        # 尝试读数据库
-        template = self._load_from_db(scene_category)
+        # 尝试读数据库（优先精确匹配 product_type，再回退到 pomelo 默认）
+        template = self._load_from_db(scene_category, product_type)
+        if template is None and product_type != "pomelo":
+            template = self._load_from_db(scene_category, "pomelo")
+        if template is None:
+            template = self._load_from_db(scene_category)  # 旧版兼容（无 product_type 列）
         if template is None:
             template = self._get_default(scene_category)
 
-        self._cache[scene_category] = template
+        self._cache[cache_key] = template
         self._cache_time = time.time()
         return template
 
-    def _load_from_db(self, scene_category: str) -> Optional[dict]:
+    def _load_from_db(self, scene_category: str, product_type: str = None) -> Optional[dict]:
         """从 MySQL pomelo_prompt_library 表加载当前启用版本"""
         try:
             from .db import query_one
-            row = query_one(
-                """SELECT system_role_desc, prompt_template, variables_schema, version
-                   FROM pomelo_prompt_library
-                   WHERE scene_category = %s AND is_current = 1 AND status = 1
-                   ORDER BY priority DESC LIMIT 1""",
-                (scene_category,),
-            )
+            if product_type:
+                row = query_one(
+                    """SELECT system_role_desc, prompt_template, variables_schema, version
+                       FROM pomelo_prompt_library
+                       WHERE scene_category = %s AND product_type = %s
+                       AND is_current = 1 AND status = 1
+                       ORDER BY priority DESC LIMIT 1""",
+                    (scene_category, product_type),
+                )
+            else:
+                # 兼容旧版无 product_type 列
+                try:
+                    row = query_one(
+                        """SELECT system_role_desc, prompt_template, variables_schema, version
+                           FROM pomelo_prompt_library
+                           WHERE scene_category = %s AND is_current = 1 AND status = 1
+                           ORDER BY priority DESC LIMIT 1""",
+                        (scene_category,),
+                    )
+                except Exception:
+                    row = None
             if row:
                 return {
                     "system_role_desc": row["system_role_desc"],
@@ -322,6 +342,15 @@ class IntentResult:
             budget = int(budget_match.group(1))
             constraints["budget_max"] = budget
 
+        # 检测产品类型
+        fruit_map = {"苹果": "apple", "香蕉": "banana", "西瓜": "watermelon",
+                     "橙子": "orange", "葡萄": "grape", "草莓": "strawberry",
+                     "金柚": "pomelo", "柚子": "pomelo", "沙田柚": "pomelo", "蜜柚": "pomelo"}
+        for kw, pt in fruit_map.items():
+            if kw in user_input:
+                constraints["product_type"] = pt
+                break
+
         # 尝试用 jieba 提取关键词，失败则简单拆分
         try:
             from .text_utils import extract_keywords
@@ -337,7 +366,7 @@ class IntentResult:
             error=error,
         )
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "intent": self.intent,
             "confidence": self.confidence,

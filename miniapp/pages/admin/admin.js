@@ -8,6 +8,7 @@ Page({
     loading: false,
     editMode: false,
     editItem: null,
+    productTypes: ['pomelo', 'apple', 'banana', 'watermelon', 'orange', 'grape'],
   },
 
   onShow() {
@@ -39,10 +40,15 @@ Page({
 
   // ---- 新增 ----
 
+  onProductTypeChange(e) {
+    const val = this.data.productTypes[e.detail.value];
+    this.setData({ 'editItem.productType': val });
+  },
+
   onAdd() {
     const isKnowledge = this.data.tab === 'knowledge';
     const emptyItem = isKnowledge
-      ? { pomeloName: '', category: '', origin: '', tasteDescription: '' }
+      ? { pomeloName: '', productType: 'pomelo', category: '', origin: '', tasteDescription: '', productDescription: '', specification: '', priceRange: '' }
       : { promptName: '', sceneCategory: 'BUY', promptTemplate: '', systemRoleDesc: '' };
     this.setData({ editMode: true, editItem: emptyItem, isNew: true });
   },
@@ -87,9 +93,11 @@ Page({
 
     const body = isKnowledge ? {
       pomeloName: formData.pomeloName,
+      productType: formData.productType || this.data.editItem.productType || 'pomelo',
       category: formData.category,
       origin: formData.origin,
       tasteDescription: formData.tasteDescription,
+      productDescription: formData.productDescription || '',
       specification: formData.specification,
       priceRange: formData.priceRange,
     } : {

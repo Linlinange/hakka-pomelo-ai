@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 推荐结果中的单条金柚 */
+/** 推荐结果中的单条产品（V2.0支持多品类） */
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,6 +15,7 @@ import java.util.List;
 public class PomeloRecommendItem {
 
     private Long id;
+    private String productType;         // V2.0: 产品类型
     private String pomeloName;
     private String category;
     private String origin;
@@ -22,6 +23,7 @@ public class PomeloRecommendItem {
     private String priceRange;
     private String tasteDescription;
     private String hakkaCultureRelation;
+    private String productDescription;  // V2.0: 通用产品描述
     private String imageUrl;
     private String giftSceneTags;
     private String tags;
@@ -30,6 +32,7 @@ public class PomeloRecommendItem {
     private BigDecimal scorePriceMatch;
     private BigDecimal scoreSceneFit;
     private BigDecimal scoreHakkaFeature;
+    private BigDecimal scoreProductFeature;  // V2.0: 产品特色评分
     private BigDecimal ruleTotal;
     private BigDecimal llmScore;
     private BigDecimal finalScore;

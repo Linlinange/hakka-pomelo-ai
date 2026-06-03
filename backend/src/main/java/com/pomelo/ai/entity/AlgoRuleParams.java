@@ -16,7 +16,8 @@ public class AlgoRuleParams {
     private String paramName;
     private BigDecimal paramValue;
     private String paramType;       // WEIGHT / THRESHOLD / COEFFICIENT
-    private String paramGroup;      // REQUIREMENT_MATCH / SCENE_FIT / HAKKA_FEATURE / LLM_ADAPT
+    private String paramGroup;      // REQUIREMENT_MATCH / SCENE_FIT / HAKKA_FEATURE / PRODUCT_FEATURE / LLM_ADAPT
+    private String productType;     // V2.0: 产品类型（支持不同产品类型独立权重）
     private String paramRange;
     private String description;
     private Integer status;

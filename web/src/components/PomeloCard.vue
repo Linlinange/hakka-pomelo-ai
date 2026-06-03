@@ -9,6 +9,7 @@ const props = defineProps({
 
 const expanded = ref(false)
 
+const productType = computed(() => props.item.productType || props.item.product_type || 'pomelo')
 const name = computed(() => props.item.pomeloName || props.item.pomelo_name || '')
 const origin = computed(() => props.item.origin || '')
 const price = computed(() => props.item.priceRange || props.item.price_range || '')
@@ -25,7 +26,14 @@ const tags = computed(() => {
 // 打分明细
 const scorePrice = computed(() => Number(props.item.scorePriceMatch || props.item.score_price_match || 0).toFixed(1))
 const scoreScene = computed(() => Number(props.item.scoreSceneFit || props.item.score_scene_fit || 0).toFixed(1))
-const scoreHakka = computed(() => Number(props.item.scoreHakkaFeature || props.item.score_hakka_feature || 0).toFixed(1))
+// 第三维度：pomelo→score_hakka_feature，其他→score_product_feature
+const scoreThird = computed(() => {
+  if (productType.value === 'pomelo') {
+    return Number(props.item.scoreHakkaFeature || props.item.score_hakka_feature || 0).toFixed(1)
+  }
+  return Number(props.item.scoreProductFeature || props.item.score_product_feature || 0).toFixed(1)
+})
+const thirdLabel = computed(() => productType.value === 'pomelo' ? '客家特色' : '产品特色')
 const ruleTotal = computed(() => Number(props.item.ruleTotal || props.item.rule_total || 0).toFixed(1))
 const llmScore = computed(() => Number(props.item.llmScore || props.item.llm_score || 0).toFixed(0))
 
@@ -87,7 +95,7 @@ function goDetail() {
       </div>
 
       <!-- 打分明细（可展开） -->
-      <div v-if="showScoring && (scorePrice > 0 || scoreScene > 0 || scoreHakka > 0)" class="scoring-section">
+      <div v-if="showScoring && (scorePrice > 0 || scoreScene > 0 || scoreThird > 0)" class="scoring-section">
         <button class="scoring-toggle" @click.stop="expanded = !expanded">
           {{ expanded ? '收起' : '查看' }}打分详情
           <span :class="{ rotated: expanded }">▾</span>
@@ -105,9 +113,9 @@ function goDetail() {
               <span class="score-val">{{ scoreScene }}</span>
             </div>
             <div class="score-row">
-              <span class="score-label-text">客家特色</span>
-              <div class="score-bar-bg"><div class="score-bar-fill hakka" :style="{ width: (scoreHakka * 10) + '%' }"></div></div>
-              <span class="score-val">{{ scoreHakka }}</span>
+              <span class="score-label-text">{{ thirdLabel }}</span>
+              <div class="score-bar-bg"><div class="score-bar-fill hakka" :style="{ width: (scoreThird * 10) + '%' }"></div></div>
+              <span class="score-val">{{ scoreThird }}</span>
             </div>
             <div class="score-row total">
               <span class="score-label-text">规则总分</span>

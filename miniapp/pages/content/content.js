@@ -4,7 +4,7 @@ Page({
   data: {
     scene: 'social',       // 'ecommerce' | 'social'
     prompt: '',
-    pomeloName: '客家金柚',
+    pomeloName: '',
     result: null,          // { content, scene, pomelo_name, created_at }
     loading: false,
   },

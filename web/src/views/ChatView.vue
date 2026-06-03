@@ -18,8 +18,8 @@ const DEBOUNCE_MS = 500
 let debounceTimer = null
 
 const HINTS = {
-  recommend: '你好！我是客家金柚AI导购 🍐\n告诉我你的需求，比如"200元中秋送礼推荐"或"适合老人的金柚"',
-  qa: '你好！我是客家金柚知识专家 📚\n问我任何金柚相关的问题，比如"金柚怎么保存"或"沙田柚和蜜柚的区别"',
+  recommend: '你好！我是AI导购 🍐\n告诉我你的需求，比如"200元送礼推荐"或"适合老人的水果"',
+  qa: '你好！我是农产品知识专家 📚\n问我任何问题，比如"苹果怎么保存"或"沙田柚和蜜柚的区别"',
 }
 
 onMounted(async () => {
@@ -188,8 +188,8 @@ function handleStreamDone(data, isQa) {
     const recs = data.recommendations || []
     if (recs.length > 0) {
       const summary = (data.intent?.intent || '') === 'BUY'
-        ? 为您精选了  款客家金柚：
-        : 为您找到  款相关金柚：
+        ? 为您精选了  款产品：
+        : 为您找到  款相关产品：
       const top3 = recs.slice(0, 3)
       messages.value.push({ role: 'ai', type: 'recommend', content: summary, items: top3 })
       api.saveMessage({ sessionId: sessionId.value, role: 'ai', msgType: 'recommend', content: summary,
@@ -210,8 +210,8 @@ function handleResponse(data, isQa) {
     const recs = data.recommendations || []
     if (recs.length > 0) {
       const summary = (data.intent?.intent || '') === 'BUY'
-        ? 为您精选了  款客家金柚：
-        : 为您找到  款相关金柚：
+        ? 为您精选了  款产品：
+        : 为您找到  款相关产品：
       const top3 = recs.slice(0, 3)
       messages.value.push({ role: 'ai', type: 'recommend', content: summary, items: top3 })
       api.saveMessage({ sessionId: sessionId.value, role: 'ai', msgType: 'recommend', content: summary,
@@ -365,7 +365,7 @@ const inputOverLimit = computed(() => inputLength.value > MAX_INPUT_LENGTH)
     <!-- 输入区 -->
     <div class="input-bar">
       <input class="chat-input" v-model="inputText"
-             :placeholder="mode === 'qa' ? '输入你的问题...' : '输入需求，如\"200元中秋送礼推荐\"...'"
+             :placeholder="mode === 'qa' ? '输入你的问题，如"苹果怎么保存"...' : '输入需求，如"200元送礼推荐水果"...'"
              :maxlength="MAX_INPUT_LENGTH"
              @keyup.enter="send" :disabled="loading" />
       <span class="char-count" :class="{ over: inputOverLimit }">{{ inputLength }}/{{ MAX_INPUT_LENGTH }}</span>

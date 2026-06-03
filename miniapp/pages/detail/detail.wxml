@@ -32,9 +32,14 @@
       <text class="section-text">{{entity.cultivationProcess}}</text>
     </view>
 
-    <view class="section" wx:if="{{entity.hakkaCultureRelation}}">
+    <view class="section" wx:if="{{entity.hakkaCultureRelation && (entity.productType || entity.product_type) === 'pomelo'}}">
       <text class="section-title">🏮 客家文化</text>
       <text class="section-text">{{entity.hakkaCultureRelation}}</text>
+    </view>
+
+    <view class="section" wx:if="{{entity.productDescription && (entity.productType || entity.product_type) !== 'pomelo'}}">
+      <text class="section-title">📖 产品特色</text>
+      <text class="section-text">{{entity.productDescription}}</text>
     </view>
 
     <view class="section" wx:if="{{entity.ediblePairing}}">
@@ -63,7 +68,8 @@
       <view class="scores">
         <text>需求匹配：{{entity.scoreRequirementMatch}} / 10</text>
         <text>场景适配：{{entity.scoreSceneFit}} / 10</text>
-        <text>客家特色：{{entity.scoreHakkaFeature}} / 10</text>
+        <text wx:if="{{(entity.productType || entity.product_type) === 'pomelo'}}">客家特色：{{entity.scoreHakkaFeature}} / 10</text>
+        <text wx:else>产品特色：{{entity.scoreProductFeature || entity.score_product_feature || entity.scoreHakkaFeature}} / 10</text>
       </view>
     </view>
   </block>

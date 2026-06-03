@@ -4,7 +4,7 @@
   <!-- 顶栏操作 -->
   <view class="top-bar">
     <view class="top-bar-left">
-      <text class="top-bar-title">客家金柚AI</text>
+      <text class="top-bar-title">AI 智荐</text>
     </view>
     <view class="top-bar-right">
       <view class="top-btn" bindtap="onToggleHistory">📋</view>
@@ -35,8 +35,8 @@
     <!-- 无消息时的欢迎页 -->
     <view class="welcome" wx:if="{{messages.length === 0}}">
       <image class="welcome-logo" src="/images/logo.png" mode="aspectFit" />
-      <text class="welcome-title">客家金柚AI智荐</text>
-      <text class="welcome-desc">告诉我你的需求，AI帮你精准选柚</text>
+      <text class="welcome-title">AI 智荐</text>
+      <text class="welcome-desc">告诉我你的需求，AI帮你精准推荐</text>
     </view>
 
     <!-- 消息列表 -->
@@ -60,9 +60,9 @@
           </view>
           <view class="msg-bubble msg-bubble-ai">
             <text class="msg-text" wx:if="{{item.content}}">{{item.content}}</text>
-            <view wx:if="{{item.content.includes('我是客家金柚AI导购')}}" class="quick-asks">
-              <view class="quick-btn" bindtap="onQuickAsk" data-text="200元中秋送礼推荐什么金柚？">中秋送礼推荐</view>
-              <view class="quick-btn" bindtap="onQuickAsk" data-text="适合老人吃的金柚有哪些？">适合老人的金柚</view>
+            <view wx:if="{{item.content.includes('我是AI导购')}}" class="quick-asks">
+              <view class="quick-btn" bindtap="onQuickAsk" data-text="200元中秋送礼推荐什么水果？">中秋送礼推荐</view>
+              <view class="quick-btn" bindtap="onQuickAsk" data-text="适合老人吃的水果有哪些？">适合老人的水果</view>
             </view>
           </view>
         </view>
@@ -119,7 +119,7 @@
       <textarea
         class="input-textarea"
         value="{{inputText}}"
-        placeholder="输入你的需求，如：适合老人吃的金柚..."
+        placeholder="输入你的需求，如：适合老人吃的水果..."
         placeholder-style="color:#c4b8a2;font-size:28rpx;"
         bindinput="onInput"
         adjust-position="{{false}}"

@@ -7,7 +7,7 @@ from .llm_adapter import LLMAdapter, create_adapter
 from .intent_recognizer import IntentRecognizer, IntentResult
 from .fusion_ranker import (
     FusionRanker,
-    PomeloCandidate,
+    ProductCandidate,
     UserDemand,
     ScoredCandidate,
     parse_candidates_from_rows,

@@ -51,12 +51,16 @@
       <text class="modal-title">{{isNew ? '新增' : '编辑'}}{{tab === 'knowledge' ? '知识条目' : 'Prompt模板'}}</text>
       <form bindsubmit="onSave">
         <block wx:if="{{tab === 'knowledge'}}">
-          <input class="form-input" name="pomeloName" placeholder="金柚品名" value="{{editItem.pomeloName}}" />
+          <picker class="form-picker" name="productType" value="{{editItem.productType || 'pomelo'}}" range="{{productTypes}}" bindchange="onProductTypeChange">
+            <view class="picker-label">产品类型：{{editItem.productType || 'pomelo'}}</view>
+          </picker>
+          <input class="form-input" name="pomeloName" placeholder="产品品名" value="{{editItem.pomeloName}}" />
           <input class="form-input" name="category" placeholder="品类（沙田柚/蜜柚）" value="{{editItem.category}}" />
           <input class="form-input" name="origin" placeholder="产地" value="{{editItem.origin}}" />
           <input class="form-input" name="specification" placeholder="规格" value="{{editItem.specification}}" />
           <input class="form-input" name="priceRange" placeholder="价格区间" value="{{editItem.priceRange}}" />
           <textarea class="form-textarea" name="tasteDescription" placeholder="口感描述" value="{{editItem.tasteDescription}}" />
+          <textarea class="form-textarea" name="productDescription" placeholder="产品特色描述（非金柚使用）" value="{{editItem.productDescription || ''}}" />
         </block>
         <block wx:else>
           <input class="form-input" name="promptName" placeholder="模板名称" value="{{editItem.promptName}}" />

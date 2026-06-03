@@ -1,11 +1,15 @@
-﻿"""
+"""
 大模型 + 规则式融合推荐排序算法（Fusion Ranker）
 核心流程：
-  1. 规则式多因子打分（价格匹配 / 场景适配 / 客家特色）
+  1. 规则式多因子打分（价格匹配 / 场景适配 / 产品特色）
   2. 大模型语义增强打分
   3. 融合排序（加权平均）
   4. Top-3 个性化推荐理由生成
+
+V2.0 扩展：支持多品类水果（pomelo/apple/banana/watermelon...），
+评分第三维度按 product_type 分支（pomelo→客家特色，其他→通用产品特色）
 """
+from __future__ import annotations
 
 import json
 import re
@@ -25,30 +29,33 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class PomeloCandidate:
-    """从 MySQL 召回的候选金柚"""
+class ProductCandidate:
+    """从 MySQL 召回的候选产品（多品类通用）"""
     id: int
     name: str
+    product_type: str = "pomelo"                      # 产品类型：pomelo/apple/banana...
     category: str = ""
     origin: str = ""
     specification: str = ""
     weight_range: str = ""
-    price_range: str = ""                          # 如 "30-80元/箱"
+    price_range: str = ""                             # 如 "30-80元/箱"
     season_info: str = ""
     taste_description: str = ""
     cultivation_process: str = ""
-    hakka_culture_relation: str = ""               # 客家文化关联描述
+    hakka_culture_relation: str = ""                  # 客家文化关联描述（仅pomelo）
+    product_description: str = ""                     # 通用产品描述（非pomelo使用）
     identification_tips: str = ""
     preservation_method: str = ""
     edible_pairing: str = ""
     nutritional_value: str = ""
-    gift_scene_tags: str = ""                      # 送礼场景标签（逗号分隔）
-    tags: str = ""                                 # 通用标签
-    price_low: float = 0.0                         # 价格下界（数值，解析自 price_range）
-    price_high: float = 0.0                        # 价格上界
-    score_requirement_match: float = 5.0           # DB 基础分：需求匹配度
-    score_scene_fit: float = 5.0                   # DB 基础分：场景适配度
-    score_hakka_feature: float = 5.0               # DB 基础分：客家特色贴合度
+    gift_scene_tags: str = ""                         # 送礼场景标签（逗号分隔）
+    tags: str = ""                                    # 通用标签
+    price_low: float = 0.0                            # 价格下界（数值，解析自 price_range）
+    price_high: float = 0.0                           # 价格上界
+    score_requirement_match: float = 5.0              # DB 基础分：需求匹配度
+    score_scene_fit: float = 5.0                      # DB 基础分：场景适配度
+    score_hakka_feature: float = 5.0                  # DB 基础分：客家特色贴合度（仅pomelo）
+    score_product_feature: float = 5.0                # DB 基础分：产品特色（通用维度）
 
 
 @dataclass
@@ -64,6 +71,7 @@ class UserDemand:
     quantity: Optional[int] = None
     culture_tags: list[str] = field(default_factory=list)
     keywords: list[str] = field(default_factory=list)
+    product_type_hint: Optional[str] = None            # 用户提到的产品类型（可选）
 
     @classmethod
     def from_intent_result(cls, query: str, intent_result) -> "UserDemand":
@@ -80,16 +88,17 @@ class UserDemand:
             quantity=c.get("quantity"),
             culture_tags=intent_result.culture_tags or [],
             keywords=intent_result.keywords or [],
+            product_type_hint=c.get("product_type"),
         )
 
 
 @dataclass
 class ScoredCandidate:
-    """打分后的候选金柚"""
-    candidate: PomeloCandidate
+    """打分后的候选产品"""
+    candidate: ProductCandidate
     score_price_match: float = 0.0        # 价格匹配度 (0-10)
     score_scene_fit: float = 0.0          # 场景适配度 (0-10)
-    score_hakka_feature: float = 0.0      # 客家特色贴合度 (0-10)
+    score_third_dimension: float = 0.0    # 第三维度评分 (0-10)：pomelo→客家特色，其他→产品特色
     rule_total: float = 0.0               # 规则式加权总分 (0-10)
     llm_score: float = 0.0                # 大模型语义匹配分 (0-100)
     final_score: float = 0.0              # 融合总分
@@ -120,14 +129,14 @@ class FusionRanker:
     def rank(
         self,
         demand: UserDemand,
-        candidates: list[PomeloCandidate],
+        candidates: list[ProductCandidate],
     ) -> list[ScoredCandidate]:
         """
         执行融合推荐排序。
 
         Args:
             demand: 解析后的用户需求
-            candidates: MySQL 召回的候选金柚列表
+            candidates: MySQL 召回的候选产品列表
 
         Returns:
             按 final_score 降序排列的打分结果列表，前3名包含推荐理由
@@ -189,8 +198,8 @@ class FusionRanker:
 
     # ---- 1. 规则式多因子打分 ----
 
-    def _rule_score(self, c: PomeloCandidate, d: UserDemand) -> ScoredCandidate:
-        """对单个候选金柚进行三维度规则打分"""
+    def _rule_score(self, c: ProductCandidate, d: UserDemand) -> ScoredCandidate:
+        """对单个候选产品进行三维度规则打分"""
         s = ScoredCandidate(candidate=c)
 
         # 维度1：价格匹配度
@@ -199,18 +208,19 @@ class FusionRanker:
         # 维度2：场景适配度
         s.score_scene_fit = self._calc_scene_fit(c, d)
 
-        # 维度3：客家特色贴合度
-        s.score_hakka_feature = self._calc_hakka_feature(c, d)
+        # 维度3：按品类分支（pomelo→客家特色，其他→产品特色）
+        s.score_third_dimension = self._calc_third_dimension(c, d)
 
-        # 加权总分
+        # 加权总分（使用该品类专属权重）
+        weights = self._get_weights_for_type(c.product_type)
         s.rule_total = (
-            self._weights["w_requirement"] * s.score_price_match
-            + self._weights["w_scene"] * s.score_scene_fit
-            + self._weights["w_hakka"] * s.score_hakka_feature
+            weights["w_requirement"] * s.score_price_match
+            + weights["w_scene"] * s.score_scene_fit
+            + weights["w_third"] * s.score_third_dimension
         )
         return s
 
-    def _calc_price_match(self, c: PomeloCandidate, d: UserDemand) -> float:
+    def _calc_price_match(self, c: ProductCandidate, d: UserDemand) -> float:
         """
         价格匹配度 (0-10)
         - 候选价格在用户预算内 → 高分
@@ -246,7 +256,7 @@ class FusionRanker:
 
         return base
 
-    def _calc_scene_fit(self, c: PomeloCandidate, d: UserDemand) -> float:
+    def _calc_scene_fit(self, c: ProductCandidate, d: UserDemand) -> float:
         """
         场景适配度 (0-10)
         - 候选 gift_scene_tags / tags 与用户场景关键词匹配 → 加分
@@ -286,11 +296,19 @@ class FusionRanker:
 
         return base
 
-    def _calc_hakka_feature(self, c: PomeloCandidate, d: UserDemand) -> float:
+    def _calc_third_dimension(self, c: ProductCandidate, d: UserDemand) -> float:
+        """第三维度评分：按产品类型分支"""
+        if c.product_type == "pomelo":
+            return self._calc_hakka_feature_logic(c, d)
+        else:
+            return self._calc_product_feature(c, d)
+
+    def _calc_hakka_feature_logic(self, c: ProductCandidate, d: UserDemand) -> float:
         """
         客家特色贴合度 (0-10)
         - 候选 hakka_culture_relation 与用户 culture_tags 匹配 → 加分
         - 候选产地在梅州核心产区 → 加分
+        （仅 pomelo 类型使用）
         """
         base = c.score_hakka_feature
 
@@ -320,56 +338,112 @@ class FusionRanker:
 
         return base
 
+    def _calc_product_feature(self, c: ProductCandidate, d: UserDemand) -> float:
+        """
+        通用产品特色评分 (0-10)
+        - 以 score_product_feature 为基础分
+        - 匹配 product_description/tags/origin 与用户 keywords
+        - 非 pomelo 类型使用
+        """
+        base = c.score_product_feature
+
+        # 构建候选产品的可搜索文本
+        search_text = f"{c.origin} {c.product_description or ''} {c.hakka_culture_relation or ''} {c.tags} {c.gift_scene_tags}"
+
+        # 用户信号集合
+        user_signals = set()
+        if d.keywords:
+            user_signals.update(kw for kw in d.keywords if len(kw) >= 2)
+        if d.culture_tags:
+            user_signals.update(ct for ct in d.culture_tags if len(ct) >= 2)
+        if d.scene:
+            user_signals.add(d.scene)
+
+        if not user_signals:
+            return base
+
+        # 计算文本匹配度
+        matched = set()
+        for signal in user_signals:
+            if signal in search_text:
+                matched.add(signal)
+
+        if matched:
+            bonus = min(3.0, len(matched) * 0.75)
+            return min(10.0, base + bonus)
+
+        return base
+
     # ---- 权重加载 ----
 
-    def _load_weights(self) -> dict[str, float]:
-        """从 algo_rule_params 表或默认值加载三维度权重 + 融合权重"""
-        defaults = {
-            "w_requirement": 0.40, "w_scene": 0.35, "w_hakka": 0.25,
+    def _load_weights(self) -> dict[str, dict]:
+        """
+        从 algo_rule_params 表按 product_type 加载权重。
+        返回 { product_type: { w_requirement, w_scene, w_third, w_fusion_rule, w_fusion_llm } }
+        """
+        # 默认金柚权重（作为全局兜底）
+        defaults_for_type = {
+            "w_requirement": 0.40, "w_scene": 0.35, "w_third": 0.25,
             "w_fusion_rule": 0.50, "w_fusion_llm": 0.50,
         }
+        result: dict[str, dict] = {"pomelo": dict(defaults_for_type)}
+
         try:
             from .db import query_all
             rows = query_all(
-                """SELECT param_key, param_value FROM algo_rule_params
-                   WHERE param_group IN ('REQUIREMENT_MATCH','SCENE_FIT','HAKKA_FEATURE','FUSION')
-                   AND param_type = 'WEIGHT' AND status = 1"""
+                """SELECT param_key, param_value, product_type FROM algo_rule_params
+                   WHERE param_type = 'WEIGHT' AND status = 1"""
             )
+            # 按 product_type 分组映射
             key_map = {
                 "weight_requirement_match": "w_requirement",
                 "weight_scene_fit": "w_scene",
-                "weight_hakka_feature": "w_hakka",
+                "weight_hakka_feature": "w_third",       # pomelo 使用 w_hakka → w_third
+                "weight_product_feature": "w_third",      # 其他品类映射到同一 key
                 "weight_fusion_rule": "w_fusion_rule",
                 "weight_fusion_llm": "w_fusion_llm",
             }
             for r in rows:
+                pt = r["product_type"] or "pomelo"
                 mapped = key_map.get(r["param_key"])
-                if mapped:
-                    defaults[mapped] = float(r["param_value"])
+                if not mapped:
+                    continue
+                if pt not in result:
+                    result[pt] = dict(defaults_for_type)
+                result[pt][mapped] = float(r["param_value"])
+
+            # 归一化：每组的维度权重之和应为1.0
+            for pt, w in result.items():
+                dim_keys = ["w_requirement", "w_scene", "w_third"]
+                dim_total = sum(w[k] for k in dim_keys)
+                if dim_total > 0 and abs(dim_total - 1.0) > 0.001:
+                    for k in dim_keys:
+                        w[k] = w[k] / dim_total
+
+                fusion_keys = ["w_fusion_rule", "w_fusion_llm"]
+                fusion_total = sum(w[k] for k in fusion_keys)
+                if fusion_total > 0 and abs(fusion_total - 1.0) > 0.001:
+                    for k in fusion_keys:
+                        w[k] = w[k] / fusion_total
+
+            logger.info("已加载权重，产品类型: %s", list(result.keys()))
+            for pt, w in result.items():
+                logger.info("  %s: 维度 req=%.2f scene=%.2f third=%.2f | 融合 rule=%.2f llm=%.2f",
+                            pt, w["w_requirement"], w["w_scene"], w["w_third"],
+                            w["w_fusion_rule"], w["w_fusion_llm"])
+
         except Exception as exc:
             logger.warning("从DB加载权重失败，使用默认值: %s", exc)
 
-        # 分别归一化两个独立权重组
-        dim_keys = ["w_requirement", "w_scene", "w_hakka"]
-        dim_total = sum(defaults[k] for k in dim_keys)
-        if dim_total > 0 and abs(dim_total - 1.0) > 0.001:
-            for k in dim_keys:
-                defaults[k] = defaults[k] / dim_total
+        return result
 
-        fusion_keys = ["w_fusion_rule", "w_fusion_llm"]
-        fusion_total = sum(defaults[k] for k in fusion_keys)
-        if fusion_total > 0 and abs(fusion_total - 1.0) > 0.001:
-            for k in fusion_keys:
-                defaults[k] = defaults[k] / fusion_total
-
-        logger.info("权重: 维度 req=%.2f scene=%.2f hakka=%.2f | 融合 rule=%.2f llm=%.2f",
-                    defaults["w_requirement"], defaults["w_scene"], defaults["w_hakka"],
-                    defaults["w_fusion_rule"], defaults["w_fusion_llm"])
-        return defaults
+    def _get_weights_for_type(self, product_type: str) -> dict:
+        """获取某产品类型的权重，未配置时 fallback 到 pomelo 权重"""
+        return self._weights.get(product_type, self._weights.get("pomelo", {}))
 
     # ---- 2. 大模型语义打分 ----
 
-    _SEMANTIC_SCORE_PROMPT = """\
+    _SEMANTIC_SCORE_PROMPT_POMELO = """\
 你是客家金柚领域的资深专家。请对以下候选金柚逐一评估其与用户需求的语义匹配度。
 
 用户需求：{user_query}
@@ -387,8 +461,27 @@ class FusionRanker:
 输出严格JSON数组格式（不要包含markdown标记）：
 [{{"id": <金柚ID>, "score": <0-100>, "brief": "<10字简评>"}}, ...]"""
 
-    def _llm_semantic_score(self, demand: UserDemand, candidates: list[PomeloCandidate]) -> list[float]:
-        """批量调用大模型对候选金柚进行语义打分"""
+    _SEMANTIC_SCORE_PROMPT_GENERIC = """\
+你是农产品推荐领域的资深专家，精通各类水果的产地特色、营养价值和选购要点。
+请对以下候选产品逐一评估其与用户需求的语义匹配度。
+
+用户需求：{user_query}
+用户意图：{intent}
+约束条件：{constraints}
+
+候选产品列表：
+{candidate_list}
+
+请对每个候选产品输出一个 0-100 的语义匹配分，综合考量：
+- 产品属性与用户需求的契合度
+- 产品适合用户使用场景的程度
+- 产品的产地特色及品质亮点
+
+输出严格JSON数组格式（不要包含markdown标记）：
+[{{"id": <产品ID>, "score": <0-100>, "brief": "<10字简评>"}}, ...]"""
+
+    def _llm_semantic_score(self, demand: UserDemand, candidates: list[ProductCandidate]) -> list[float]:
+        """批量调用大模型对候选产品进行语义打分"""
         if not candidates:
             return []
 
@@ -404,16 +497,25 @@ class FusionRanker:
 
         candidate_lines = []
         for i, c in enumerate(candidates):
-            desc = (
+            desc_parts = [
                 f"ID:{c.id} | 品名:{c.name} | 品类:{c.category} | "
                 f"产地:{c.origin} | 规格:{c.specification} | "
                 f"价格:{c.price_range} | 口感:{c.taste_description} | "
-                f"客家文化:{c.hakka_culture_relation[:60]} | "
-                f"送礼场景:{c.gift_scene_tags} | 标签:{c.tags}"
-            )
-            candidate_lines.append(f"  [{i + 1}] {desc}")
+            ]
+            if c.product_type == "pomelo":
+                desc_parts.append(f"客家文化:{c.hakka_culture_relation[:60]} | ")
+            else:
+                desc_parts.append(f"产品特色:{c.product_description[:60] if c.product_description else ''} | ")
+            desc_parts.append(f"送礼场景:{c.gift_scene_tags} | 标签:{c.tags}")
+            candidate_lines.append(f"  [{i + 1}] {''.join(desc_parts)}")
 
-        user_prompt = self._SEMANTIC_SCORE_PROMPT.format(
+        # 判断是否全部为 pomelo，选择对应 prompt
+        all_pomelo = all(c.product_type == "pomelo" for c in candidates)
+        prompt_template = self._SEMANTIC_SCORE_PROMPT_POMELO if all_pomelo else self._SEMANTIC_SCORE_PROMPT_GENERIC
+        system_prompt = "你是客家金柚推荐专家，请严格按照JSON格式输出结果。" if all_pomelo \
+            else "你是农产品推荐专家，请严格按照JSON格式输出结果。"
+
+        user_prompt = prompt_template.format(
             user_query=demand.original_query,
             intent="选购推荐" if demand.intent == "BUY" else "知识查询",
             constraints=constraints_str,
@@ -422,7 +524,7 @@ class FusionRanker:
 
         result = self._adapter.invoke(
             prompt=user_prompt,
-            system_prompt="你是客家金柚推荐专家，请严格按照JSON格式输出结果。",
+            system_prompt=system_prompt,
             temperature=0.30,
             max_tokens=1024,
         )
@@ -460,13 +562,15 @@ class FusionRanker:
         """
         融合公式：final = w_fusion_rule * rule_100 + w_fusion_llm * llm_score
         规则总分 (0-10) 先放大到 0-100 与 LLM 对齐，再按权重加权。
+        使用该产品品类专属的融合权重。
         """
+        weights = self._get_weights_for_type(s.candidate.product_type)
         rule_100 = s.rule_total * 10.0  # 0-10 → 0-100
-        return self._weights["w_fusion_rule"] * rule_100 + self._weights["w_fusion_llm"] * s.llm_score
+        return weights["w_fusion_rule"] * rule_100 + weights["w_fusion_llm"] * s.llm_score
 
     # ---- 4. 推荐理由生成 ----
 
-    _REASON_PROMPT = """\
+    _REASON_PROMPT_POMELO = """\
 你是梅州客家金柚文化传承人与专业导购。请为以下Top3推荐金柚各生成一段个性化推荐理由。
 
 用户原始需求：{user_query}
@@ -484,17 +588,49 @@ Top3 金柚信息：
 输出严格JSON数组（不要包含markdown标记）：
 [{{"id": <金柚ID>, "reason": "<推荐理由>"}}, ...]"""
 
-    def _generate_reasons(self, demand: UserDemand, top3: list[PomeloCandidate]) -> list[str]:
-        """为 Top-3 金柚生成个性化推荐理由"""
+    _REASON_PROMPT_GENERIC = """\
+你是农产品推荐专家，熟悉各类水果的产地特色与品质亮点。请为以下Top3推荐产品各生成一段个性化推荐理由。
+
+用户原始需求：{user_query}
+用户意图：{intent}
+
+Top3 产品信息：
+{pomelo_list}
+
+要求：
+1. 每段理由 40-80 字，温暖亲切
+2. 结合产品的产地故事、品质特色
+3. 提到与用户需求的契合点
+4. 突出产品亮点（口感、产地、营养价值等）
+
+输出严格JSON数组（不要包含markdown标记）：
+[{{"id": <产品ID>, "reason": "<推荐理由>"}}, ...]"""
+
+    def _generate_reasons(self, demand: UserDemand, top3: list[ProductCandidate]) -> list[str]:
+        """为 Top-3 产品生成个性化推荐理由"""
+        all_pomelo = all(c.product_type == "pomelo" for c in top3)
+
         lines = []
         for i, c in enumerate(top3):
-            lines.append(
-                f"  [{i + 1}] ID:{c.id} 「{c.name}」— {c.origin}，{c.specification}，"
-                f"{c.price_range}，{c.taste_description}。"
-                f"客家故事：{c.hakka_culture_relation[:80]}"
-            )
+            if all_pomelo:
+                line = (
+                    f"  [{i + 1}] ID:{c.id} 「{c.name}」— {c.origin}，{c.specification}，"
+                    f"{c.price_range}，{c.taste_description}。"
+                    f"客家故事：{c.hakka_culture_relation[:80]}"
+                )
+            else:
+                line = (
+                    f"  [{i + 1}] ID:{c.id} 「{c.name}」— {c.origin}，{c.specification}，"
+                    f"{c.price_range}，{c.taste_description}。"
+                    f"产品特色：{(c.product_description or c.hakka_culture_relation)[:80]}"
+                )
+            lines.append(line)
 
-        user_prompt = self._REASON_PROMPT.format(
+        prompt_template = self._REASON_PROMPT_POMELO if all_pomelo else self._REASON_PROMPT_GENERIC
+        system_prompt = "你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。" if all_pomelo \
+            else "你是农产品推荐专家，擅长用温暖亲切的风格介绍各地特色水果。"
+
+        user_prompt = prompt_template.format(
             user_query=demand.original_query,
             intent="选购推荐" if demand.intent == "BUY" else "知识推荐",
             pomelo_list="\n".join(lines),
@@ -502,7 +638,7 @@ Top3 金柚信息：
 
         result = self._adapter.invoke(
             prompt=user_prompt,
-            system_prompt="你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。",
+            system_prompt=system_prompt,
             temperature=0.75,
             max_tokens=1024,
         )
@@ -512,20 +648,34 @@ Top3 金柚信息：
 
         return self._parse_reasons(result["content"], [c.id for c in top3])
 
-    
+
     def _generate_reasons_stream(
-        self, demand: UserDemand, top3: list[PomeloCandidate]
+        self, demand: UserDemand, top3: list[ProductCandidate]
     ):
         """流式生成 Top-3 推荐理由 — 逐 token yield"""
+        all_pomelo = all(c.product_type == "pomelo" for c in top3)
+
         lines = []
         for i, c in enumerate(top3):
-            lines.append(
-                f"  [{i + 1}] ID:{c.id} 《{c.name}》—{c.origin}，{c.specification}，"
-                f"{c.price_range}，{c.taste_description}。"
-                f"客家故事：{c.hakka_culture_relation[:80]}"
-            )
+            if all_pomelo:
+                line = (
+                    f"  [{i + 1}] ID:{c.id} 《{c.name}》—{c.origin}，{c.specification}，"
+                    f"{c.price_range}，{c.taste_description}。"
+                    f"客家故事：{c.hakka_culture_relation[:80]}"
+                )
+            else:
+                line = (
+                    f"  [{i + 1}] ID:{c.id} 《{c.name}》—{c.origin}，{c.specification}，"
+                    f"{c.price_range}，{c.taste_description}。"
+                    f"产品特色：{(c.product_description or c.hakka_culture_relation)[:80]}"
+                )
+            lines.append(line)
 
-        user_prompt = self._REASON_PROMPT.format(
+        prompt_template = self._REASON_PROMPT_POMELO if all_pomelo else self._REASON_PROMPT_GENERIC
+        system_prompt = "你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。" if all_pomelo \
+            else "你是农产品推荐专家，擅长用温暖亲切的风格介绍各地特色水果。"
+
+        user_prompt = prompt_template.format(
             user_query=demand.original_query,
             intent="选购推荐" if demand.intent == "BUY" else "知识推荐",
             pomelo_list="\n".join(lines),
@@ -534,7 +684,7 @@ Top3 金柚信息：
         try:
             for chunk in self._adapter.invoke_stream(
                 prompt=user_prompt,
-                system_prompt="你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。",
+                system_prompt=system_prompt,
                 temperature=0.75,
                 max_tokens=1024,
             ):
@@ -543,7 +693,7 @@ Top3 金柚信息：
             # 降级：返回非流式结果
             result = self._adapter.invoke(
                 prompt=user_prompt,
-                system_prompt="你是梅州客家金柚文化传承人，擅长用温暖亲切的客家风格说话。",
+                system_prompt=system_prompt,
                 temperature=0.75,
                 max_tokens=1024,
             )
@@ -565,7 +715,8 @@ Top3 金柚信息：
                 raise LLMException(f"推荐理由JSON解析失败: {raw[:200]}")
 
         reason_map = {item["id"]: item.get("reason", "") for item in reasons}
-        return [reason_map.get(cid, "这款金柚非常适合您的需求。") for cid in top_ids]
+        default_reason = "这款产品非常适合您的需求。"
+        return [reason_map.get(cid, default_reason) for cid in top_ids]
 
     @staticmethod
     def _fallback_reason(s: ScoredCandidate, demand: UserDemand) -> str:
@@ -576,10 +727,16 @@ Top3 金柚信息：
             parts.append(f"非常适合{demand.scene}场景")
         if c.taste_description:
             parts.append(f"口感{c.taste_description}")
-        if c.hakka_culture_relation:
+        if c.product_type == "pomelo" and c.hakka_culture_relation:
             short = c.hakka_culture_relation[:30].rstrip("，。")
             parts.append(f"承载着{short}的客家文化")
-        parts.append("是您品味客家风情的不二之选。")
+        elif c.product_description:
+            short = c.product_description[:30].rstrip("，。")
+            parts.append(short)
+        if c.product_type == "pomelo":
+            parts.append("是您品味客家风情的不二之选。")
+        else:
+            parts.append("是您的理想之选。")
         return "，".join(parts) + "。"
 
 
@@ -588,14 +745,15 @@ Top3 金柚信息：
 # ---------------------------------------------------------------------------
 
 
-def parse_candidates_from_rows(rows: list[dict]) -> list[PomeloCandidate]:
-    """将 pymysql 查询结果转换为 PomeloCandidate 列表"""
+def parse_candidates_from_rows(rows: list[dict]) -> list[ProductCandidate]:
+    """将 pymysql 查询结果转换为 ProductCandidate 列表"""
     candidates = []
     for r in rows:
         price_low, price_high = _parse_price_range(r.get("price_range", ""))
-        candidates.append(PomeloCandidate(
+        candidates.append(ProductCandidate(
             id=r["id"],
             name=r.get("pomelo_name", ""),
+            product_type=r.get("product_type", "pomelo"),
             category=r.get("category", ""),
             origin=r.get("origin", ""),
             specification=r.get("specification", ""),
@@ -605,6 +763,7 @@ def parse_candidates_from_rows(rows: list[dict]) -> list[PomeloCandidate]:
             taste_description=r.get("taste_description", ""),
             cultivation_process=r.get("cultivation_process", ""),
             hakka_culture_relation=r.get("hakka_culture_relation", ""),
+            product_description=r.get("product_description", ""),
             identification_tips=r.get("identification_tips", ""),
             preservation_method=r.get("preservation_method", ""),
             edible_pairing=r.get("edible_pairing", ""),
@@ -616,6 +775,7 @@ def parse_candidates_from_rows(rows: list[dict]) -> list[PomeloCandidate]:
             score_requirement_match=float(r.get("score_requirement_match", 5.0)),
             score_scene_fit=float(r.get("score_scene_fit", 5.0)),
             score_hakka_feature=float(r.get("score_hakka_feature", 5.0)),
+            score_product_feature=float(r.get("score_product_feature", 5.0)),
         ))
     return candidates
 
